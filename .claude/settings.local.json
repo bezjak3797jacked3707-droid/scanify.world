@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const r = require\\('recharts'\\); const a = r.Area; console.log\\('Area exists:', !!a\\)\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

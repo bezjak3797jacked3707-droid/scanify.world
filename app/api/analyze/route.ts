@@ -32,8 +32,17 @@ export async function POST(req: NextRequest) {
   "confidence": "confidence percentage as number only",
   "description": "2-3 sentence description",
   "materials": "main materials used",
-  "specs": "key specs or features"
-}`;
+  "specs": "key specs or features",
+  "priceHistory": [
+    {"year": "2019", "price": 0},
+    {"year": "2020", "price": 0},
+    {"year": "2021", "price": 0},
+    {"year": "2022", "price": 0},
+    {"year": "2023", "price": 0},
+    {"year": "2024", "price": 0}
+  ]
+}
+Replace the price values with realistic estimated market prices (as plain numbers, no currency symbols) for this specific item in each year. Base it on known market trends for this type of item.`;
 
     let lastError: any;
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -63,6 +72,7 @@ export async function POST(req: NextRequest) {
           description: parsed.description,
           materials: parsed.materials,
           specs: parsed.specs,
+          price_history: parsed.priceHistory ?? null,
         });
 
         if (dbError) {
