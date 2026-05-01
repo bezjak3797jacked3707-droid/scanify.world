@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
@@ -26,10 +27,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="bg-black flex justify-center">
-        <div className="w-full max-w-md min-h-screen bg-black border-x border-zinc-800 relative pb-24">
+      <body className="bg-[#0a0a0a] flex justify-center">
+        <div className="w-full max-w-md min-h-screen bg-[#111111] border-x border-[#1e1e1e] relative pb-24">
           {children}
           <BottomNav />
         </div>
