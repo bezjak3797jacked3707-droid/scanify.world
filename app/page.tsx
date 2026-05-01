@@ -26,28 +26,28 @@ const reviews = [
     name: "Sarah M.",
     stars: 5,
     comment:
-      "Found out my vintage camera was worth triple what I paid. Scanify is a game changer.",
+      "this makes reselling so much easier with scanify! im lucky i found this out!",
   },
   {
     initials: "JT",
     name: "James T.",
     stars: 5,
     comment:
-      "Sold my sneaker collection 40% higher after pricing everything with Scanify.",
+      "i just sold my old shoes for more then i bought them for!",
   },
   {
     initials: "AL",
     name: "Amara L.",
     stars: 4,
     comment:
-      "Super accurate for electronics. Helped me negotiate the right selling price.",
+      "taking a picture of it is so much easier then doing so much research.",
   },
   {
     initials: "CR",
     name: "Carlos R.",
     stars: 5,
     comment:
-      "Used it at a flea market to know what was worth buying instantly. Love it.",
+      "getting to know the materials its made of is such a luxury.",
   },
 ];
 
