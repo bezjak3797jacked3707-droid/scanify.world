@@ -10,10 +10,26 @@ async function sleep(ms: number) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageUrl } = await req.json();
+    const { imageUrl, userId } = await req.json();
 
     if (!imageUrl) {
       return NextResponse.json({ error: "No image URL provided" }, { status: 400 });
+    }
+
+    // Check scan limits if user is logged in
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("scans_used, is_pro")
+        .eq("id", userId)
+        .single();
+
+      if (profile && !profile.is_pro && profile.scans_used >= 2) {
+        return NextResponse.json(
+          { error: "scan_limit_reached" },
+          { status: 403 }
+        );
+      }
     }
 
     const imageResponse = await fetch(imageUrl);
@@ -41,8 +57,7 @@ export async function POST(req: NextRequest) {
     {"year": "2023", "price": 0},
     {"year": "2024", "price": 0}
   ]
-}
-Replace the price values with realistic estimated market prices (as plain numbers, no currency symbols) for this specific item in each year. Base it on known market trends for this type of item.`;
+}`;
 
     let lastError: any;
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -62,6 +77,7 @@ Replace the price values with realistic estimated market prices (as plain number
         const text = result.response.text().trim();
         const parsed = JSON.parse(text);
 
+        // Save to database
         const { error: dbError } = await supabase.from("scan_results").insert({
           image_url: imageUrl,
           name: parsed.name,
@@ -72,13 +88,16 @@ Replace the price values with realistic estimated market prices (as plain number
           description: parsed.description,
           materials: parsed.materials,
           specs: parsed.specs,
-          price_history: parsed.priceHistory ?? null,
+          user_id: userId || null,
         });
 
         if (dbError) {
           console.error("DB save error:", dbError.message);
-        } else {
-          console.log("Scan saved to database.");
+        }
+
+        // Increment scan count if user is logged in
+        if (userId) {
+          await supabase.rpc("increment_scans", { user_id_input: userId });
         }
 
         return NextResponse.json(parsed);
