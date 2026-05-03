@@ -26,7 +26,7 @@ const COMPARISON = [
   { label: "Monthly scans",        free: "2",       pro: "99+"  },
   { label: "AI appraisal",         free: "Basic",   pro: "Priority"   },
   { label: "Current value",        free: true,      pro: true         },
-  { label: "Price history graph",  free: false,     pro: true         },
+  { label: "Price history graph",  free: true,      pro: true         },
   { label: "Leaderboard",          free: false,     pro: true         },
   { label: "Materials & specs",    free: true,      pro: true         },
   { label: "Early access",         free: false,     pro: true         },
