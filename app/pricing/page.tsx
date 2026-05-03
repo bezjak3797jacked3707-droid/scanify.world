@@ -3,7 +3,7 @@ import Link from "next/link";
 // ── Feature lists ───────────────────────────────────────
 
 const FREE_FEATURES = [
-  { label: "3 scans per month",       included: true  },
+  { label: "2 scans per month",       included: true  },
   { label: "Basic item identification",included: true  },
   { label: "Current value estimate",  included: true  },
   { label: "Category & materials",    included: true  },
@@ -13,7 +13,7 @@ const FREE_FEATURES = [
 ];
 
 const PRO_FEATURES = [
-  "Unlimited scans",
+  "99+ scans per month",
   "Full AI appraisal",
   "Price history graph (6 years)",
   "Leaderboard & ranking",
@@ -23,7 +23,7 @@ const PRO_FEATURES = [
 ];
 
 const COMPARISON = [
-  { label: "Monthly scans",        free: "3",       pro: "Unlimited"  },
+  { label: "Monthly scans",        free: "2",       pro: "99+"  },
   { label: "AI appraisal",         free: "Basic",   pro: "Priority"   },
   { label: "Current value",        free: true,      pro: true         },
   { label: "Price history graph",  free: false,     pro: true         },
