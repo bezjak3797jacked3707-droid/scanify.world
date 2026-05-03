@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 export default function ScanPage() {
   const router = useRouter();
@@ -13,8 +14,35 @@ export default function ScanPage() {
   const [note, setNote] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [scansUsed, setScansUsed] = useState(0);
+  const [isPro, setIsPro] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        supabase
+          .from("profiles")
+          .select("scans_used, is_pro")
+          .eq("id", session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) {
+              setScansUsed(data.scans_used);
+              setIsPro(data.is_pro);
+            }
+          });
+      }
+    });
+  }, []);
+
+  const scanLimit = 2;
+  const limitReached = !isPro && scansUsed >= scanLimit;
 
   function openPicker() {
+    if (limitReached) return;
     fileInputRef.current?.click();
   }
 
@@ -24,7 +52,6 @@ export default function ScanPage() {
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
     setError("");
-    // reset so the same file can be re-selected after retake
     e.target.value = "";
   }
 
@@ -46,7 +73,10 @@ export default function ScanPage() {
 
       const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
 
-      router.push(`/result?imageUrl=${encodeURIComponent(data.publicUrl)}`);
+      console.log("=== SENDING USER ID ===", user?.id);
+router.push(
+  `/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user?.id ?? ""}`
+);
     } catch (err) {
       console.error(err);
       setError("Upload failed. Check bucket setup and try again.");
@@ -69,63 +99,84 @@ export default function ScanPage() {
 
       {!preview ? (
         <div className="flex flex-col flex-1 items-center justify-center px-10 gap-6">
+
+          {/* Scan limit warning */}
+          {limitReached && (
+            <div
+              className="w-full max-w-[300px] rounded-2xl p-4 text-center space-y-3"
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid #7c3aed",
+              }}
+            >
+              <p className="text-sm font-semibold" style={{ color: "#C9A84C" }}>
+                You've used your {scanLimit} free scans
+              </p>
+              <p className="text-xs" style={{ color: "#666" }}>
+                Upgrade to Pro for 99+ scans per month
+              </p>
+              <button
+                onClick={() => router.push("/pricing")}
+                className="w-full py-2 rounded-xl text-sm font-semibold tracking-wider uppercase"
+                style={{
+                  background: "var(--color-green)",
+                  color: "var(--color-gold)",
+                }}
+              >
+                Upgrade to Pro
+              </button>
+            </div>
+          )}
+
           {/* Viewfinder with L-corner guides */}
           <div className="relative w-full max-w-[300px] aspect-square flex items-center justify-center">
-            {/* Top-left corner */}
             <span
               className="absolute top-0 left-0 w-9 h-9 border-t-[3px] border-l-[3px]"
-              style={{ borderColor: "var(--color-green)" }}
+              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
             />
-            {/* Top-right corner */}
             <span
               className="absolute top-0 right-0 w-9 h-9 border-t-[3px] border-r-[3px]"
-              style={{ borderColor: "var(--color-green)" }}
+              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
             />
-            {/* Bottom-left corner */}
             <span
               className="absolute bottom-0 left-0 w-9 h-9 border-b-[3px] border-l-[3px]"
-              style={{ borderColor: "var(--color-green)" }}
+              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
             />
-            {/* Bottom-right corner */}
             <span
               className="absolute bottom-0 right-0 w-9 h-9 border-b-[3px] border-r-[3px]"
-              style={{ borderColor: "var(--color-green)" }}
+              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
             />
 
-            {/* Circle scan button */}
             <button
               onClick={openPicker}
               type="button"
+              disabled={limitReached}
               aria-label="Open camera or file picker"
-              className="w-24 h-24 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:scale-95"
+              className="w-24 h-24 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:scale-95 disabled:opacity-30"
               style={{ background: "var(--color-green)" }}
             >
-              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <line x1="18" y1="6" x2="18" y2="30" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" />
                 <line x1="6" y1="18" x2="30" y2="18" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
             </button>
           </div>
 
-          <p
-            className="text-xs uppercase tracking-[0.25em]"
-            style={{ color: "var(--color-gold)" }}
-          >
-            Tap to scan
-          </p>
+          {!limitReached && (
+            <p
+              className="text-xs uppercase tracking-[0.25em]"
+              style={{ color: "var(--color-gold)" }}
+            >
+              {user ? `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining` : "Tap to scan"}
+            </p>
+          )}
         </div>
       ) : (
         <div className="flex flex-col flex-1 px-5 py-6 gap-5">
-          {/* Preview image */}
           <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden">
-            <img
-              src={preview}
-              alt="Selected item"
-              className="w-full h-full object-cover"
-            />
+            <img src={preview} alt="Selected item" className="w-full h-full object-cover" />
           </div>
 
-          {/* Retake */}
           <button
             onClick={openPicker}
             type="button"
@@ -135,7 +186,6 @@ export default function ScanPage() {
             Retake photo
           </button>
 
-          {/* Note input */}
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -150,7 +200,6 @@ export default function ScanPage() {
             }}
           />
 
-          {/* Scan button */}
           <button
             onClick={handleScan}
             disabled={isUploading}

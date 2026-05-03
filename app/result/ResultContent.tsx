@@ -197,7 +197,7 @@ export default function ResultContent() {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl, userId: searchParams.get("userId") }),
+          body: JSON.stringify({ imageUrl, userId: new URLSearchParams(window.location.search).get("userId") }),
         });
         if (!res.ok) throw new Error("Analysis failed");
         const data = await res.json();

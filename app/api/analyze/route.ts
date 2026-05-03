@@ -11,6 +11,7 @@ async function sleep(ms: number) {
 export async function POST(req: NextRequest) {
   try {
     const { imageUrl, userId } = await req.json();
+console.log("=== USER ID RECEIVED ===", userId);
 
     if (!imageUrl) {
       return NextResponse.json({ error: "No image URL provided" }, { status: 400 });
