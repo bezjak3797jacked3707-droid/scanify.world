@@ -42,6 +42,10 @@ export default function ScanPage() {
   const limitReached = !isPro && scansUsed >= scanLimit;
 
   function openPicker() {
+    if (!user) {
+      router.push("/");
+      return;
+    }
     if (limitReached) return;
     fileInputRef.current?.click();
   }
@@ -163,13 +167,13 @@ router.push(
           </div>
 
           {!limitReached && (
-            <p
-              className="text-xs uppercase tracking-[0.25em]"
-              style={{ color: "var(--color-gold)" }}
-            >
-              {user ? `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining` : "Tap to scan"}
-            </p>
-          )}
+  <p
+    className="text-xs uppercase tracking-[0.25em]"
+    style={{ color: "var(--color-gold)" }}
+  >
+    {user ? `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining` : "Sign in to scan"}
+  </p>
+)}
         </div>
       ) : (
         <div className="flex flex-col flex-1 px-5 py-6 gap-5">
