@@ -1,5 +1,7 @@
 "use client";
 
+import AuthButton from "@/components/AuthButton";
+
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -106,27 +108,7 @@ export default function Home() {
           >
             Scanify
           </span>
-          <button
-            aria-label="Profile"
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-brown)",
-            }}
-          >
-            <svg
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#C9A84C"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 20c0-4 3.582-7 8-7s8 3 8 7" />
-            </svg>
-          </button>
+          <AuthButton />
         </div>
 
         {/* Wavy blurred accent line */}
