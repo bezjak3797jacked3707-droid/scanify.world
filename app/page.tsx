@@ -155,6 +155,7 @@ export default function Home() {
     src="/logo.png"
     alt="Scanify logo"
     className="w-full h-full object-contain"
+    style={{ mixBlendMode: "screen" }}
   />
 </div>
 
