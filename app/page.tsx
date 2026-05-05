@@ -150,7 +150,7 @@ export default function Home() {
         {/* Center content */}
         <div className="flex flex-col items-center justify-center flex-1 px-6 gap-8 relative z-10 pb-10">
           {/* Logo placeholder */}
-          <div className="w-44 h-44 rounded-3xl overflow-hidden">
+          <div className="w-64 h-64 rounded-3xl overflow-hidden">
   <img
     src="/logo.png"
     alt="Scanify logo"
