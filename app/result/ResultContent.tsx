@@ -324,9 +324,10 @@ export default function ResultContent() {
 
               {/* Original Price */}
               <StatCard label="Original Price">
-              {result.currentValue.startsWith("$") ? result.currentValue : `$${result.currentValue}`}
-              </StatCard>
-
+  <p className="text-xl font-bold" style={{ color: "#00C853" }}>
+    {"$" + result.originalPrice.replace("$", "")}
+  </p>
+</StatCard>
               {/* Confidence */}
               <StatCard label="Confidence">
                 <p className="text-xl font-bold" style={confidenceStyle}>
