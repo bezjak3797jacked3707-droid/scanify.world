@@ -150,31 +150,13 @@ export default function Home() {
         {/* Center content */}
         <div className="flex flex-col items-center justify-center flex-1 px-6 gap-8 relative z-10 pb-10">
           {/* Logo placeholder */}
-          <div
-            className="w-44 h-44 rounded-3xl flex flex-col items-center justify-center gap-2"
-            style={{
-              border: "1.5px dashed rgba(201,168,76,0.25)",
-              background: "rgba(201,168,76,0.03)",
-            }}
-          >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgba(201,168,76,0.3)"
-              strokeWidth="1.2"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="3" />
-              <path d="M8 12h8M12 8v8" />
-            </svg>
-            <span
-              className="text-xs uppercase tracking-widest"
-              style={{ color: "rgba(201,168,76,0.3)" }}
-            >
-              Logo
-            </span>
-          </div>
+          <div className="w-44 h-44 rounded-3xl overflow-hidden">
+  <img
+    src="/logo.png"
+    alt="Scanify logo"
+    className="w-full h-full object-contain"
+  />
+</div>
 
           {/* Tagline */}
           <div className="text-center space-y-1.5">
