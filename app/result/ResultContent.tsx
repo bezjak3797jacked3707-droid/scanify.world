@@ -235,7 +235,35 @@ export default function ResultContent() {
   }, [result, confidenceNum]);
 
   const priceHistory = result?.priceHistory ?? [];
-
+  if (loading) {
+    return (
+      <main
+        className="min-h-screen flex flex-col items-center justify-center gap-8"
+        style={{ background: "var(--color-black)" }}
+      >
+        <div className="flex gap-3 items-end justify-center" style={{ height: 48 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 3,
+                background: "#1B4D3E",
+                animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+        <p
+          className="text-sm uppercase tracking-widest"
+          style={{ color: "var(--color-gold)" }}
+        >
+          Analyzing your item…
+        </p>
+      </main>
+    );
+  }
 
   if (error) {
     return (
@@ -300,7 +328,7 @@ export default function ResultContent() {
                       textShadow: "0 0 10px #00C853, 0 0 20px rgba(0,200,83,0.4)",
                     }}
                   >
-                    {result.currentValue}
+                    {"$" + result.currentValue.replace("$", "")}
                   </p>
                 </div>
               </StatCard>
