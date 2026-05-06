@@ -249,7 +249,7 @@ export default function ResultContent() {
                 width: 10,
                 height: 10,
                 borderRadius: 3,
-                background: "#1B4D3E",
+                background: "#7c3aed",
                 animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite`,
               }}
             />
