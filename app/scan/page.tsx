@@ -78,9 +78,9 @@ export default function ScanPage() {
       const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
 
       console.log("=== SENDING USER ID ===", user?.id);
-router.push(
-  `/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user?.id ?? ""}`
-);
+      router.push(
+        `/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}`
+      );
     } catch (err) {
       console.error(err);
       setError("Upload failed. Check bucket setup and try again.");

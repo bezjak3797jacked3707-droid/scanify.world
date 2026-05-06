@@ -10,7 +10,7 @@ async function sleep(ms: number) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageUrl, userId } = await req.json();
+    const { imageUrl, userId, note } = await req.json();
 console.log("=== USER ID RECEIVED ===", userId);
 
     if (!imageUrl) {
@@ -40,25 +40,27 @@ console.log("=== USER ID RECEIVED ===", userId);
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const prompt = `You are an expert appraiser. Analyze this image and return ONLY a JSON object with no extra text, no markdown, no backticks. Use this exact format:
-{
-  "name": "full product name",
-  "currentValue": "estimated current market value in USD",
-  "originalPrice": "original retail price in USD",
-  "category": "product category",
-  "confidence": "confidence percentage as number only",
-  "description": "2-3 sentence description",
-  "materials": "main materials used",
-  "specs": "key specs or features",
-  "priceHistory": [
-    {"year": "2019", "price": 0},
-    {"year": "2020", "price": 0},
-    {"year": "2021", "price": 0},
-    {"year": "2022", "price": 0},
-    {"year": "2023", "price": 0},
-    {"year": "2024", "price": 0}
-  ]
-}`;
+    const noteHint = note ? `The user has identified this item as: "${note}". Use this as a strong hint.` : "";
+
+    const prompt = `You are an expert appraiser with deep knowledge of luxury goods, cars, electronics, art and collectibles. ${noteHint} Analyze this image carefully and identify the exact make, model and variant. Return ONLY a JSON object with no extra text, no markdown, no backticks. Use this exact format:
+    {
+      "name": "full product name including exact model and variant",
+      "currentValue": "estimated current market value in USD as a number only",
+      "originalPrice": "original retail price in USD as a number only",
+      "category": "product category",
+      "confidence": "confidence percentage as number only",
+      "description": "2-3 sentence description",
+      "materials": "main materials used",
+      "specs": "key specs or features",
+      "priceHistory": [
+        {"year": "2019", "price": 0},
+        {"year": "2020", "price": 0},
+        {"year": "2021", "price": 0},
+        {"year": "2022", "price": 0},
+        {"year": "2023", "price": 0},
+        {"year": "2024", "price": 0}
+      ]
+    }`;
 
     let lastError: any;
     for (let attempt = 1; attempt <= 3; attempt++) {
