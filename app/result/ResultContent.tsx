@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
+
   AreaChart,
   Area,
   XAxis,
@@ -235,24 +236,6 @@ export default function ResultContent() {
 
   const priceHistory = result?.priceHistory ?? [];
 
-  if (loading) {
-    return (
-      <main
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "var(--color-black)" }}
-      >
-        <div className="text-center space-y-4">
-          <div
-            className="w-10 h-10 rounded-full border-2 border-t-transparent mx-auto animate-spin"
-            style={{ borderColor: "var(--color-green)" }}
-          />
-          <p className="text-sm" style={{ color: "#555" }}>
-            Analyzing your item…
-          </p>
-        </div>
-      </main>
-    );
-  }
 
   if (error) {
     return (

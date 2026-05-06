@@ -66,3 +66,7 @@ h1, h2, h3, h4, h5, h6 {
 .chart-flicker .recharts-area-curve {
   animation: chart-line-flicker 2s ease-in-out infinite;
 }
+@keyframes pulse-block {
+  0%, 100% { opacity: 0.2; transform: scaleY(0.6); }
+  50% { opacity: 1; transform: scaleY(1.4); }
+}
