@@ -71,7 +71,13 @@ export default function RankPage() {
   }, [tab]);
 
   const medals = ["🥇", "🥈", "🥉"];
-
+  async function handleReport(id: number) {
+    await supabase
+      .from("scan_results")
+      .update({ reported: true })
+      .eq("id", id);
+    alert("Reported! Thank you.");
+  }
   return (
     <main
       className="min-h-screen pb-24"
@@ -184,15 +190,25 @@ export default function RankPage() {
                   <p className="text-xs" style={{ color: "#444" }}>{entry.category}</p>
                 </div>
 
-                {/* Value */}
-                <div className="text-right flex-shrink-0">
-                  <p
-                    className="font-bold text-sm"
-                    style={{ color: index === 0 ? "var(--color-gold)" : "#00C853" }}
-                  >
-                    ${String(entry.current_value).replace("$", "")}
-                  </p>
-                </div>
+                {/* Value + Report */}
+<div className="text-right flex-shrink-0 flex flex-col items-end gap-2">
+  <p
+    className="font-bold text-sm"
+    style={{ color: index === 0 ? "var(--color-gold)" : "#00C853" }}
+  >
+    ${String(entry.current_value).replace("$", "")}
+  </p>
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      handleReport(entry.id);
+    }}
+    className="text-xs uppercase tracking-wider transition-opacity hover:opacity-70"
+    style={{ color: "#333" }}
+  >
+    Report
+  </button>
+</div>
               </div>
             ))}
           </div>
