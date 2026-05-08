@@ -332,7 +332,7 @@ export default function ResultContent() {
                       textShadow: "0 0 10px #00C853, 0 0 20px rgba(0,200,83,0.4)",
                     }}
                   >
-                    {"$" + result.currentValue.replace("$", "")}
+                    {"$" + String(result.currentValue).replace("$", "")}
                   </p>
                 </div>
               </StatCard>
@@ -340,7 +340,7 @@ export default function ResultContent() {
               {/* Original Price */}
               <StatCard label="Original Price">
   <p className="text-xl font-bold" style={{ color: "#00C853" }}>
-    {"$" + result.originalPrice.replace("$", "")}
+  {"$" + String(result.originalPrice).replace("$", "")}
   </p>
 </StatCard>
               {/* Confidence */}
