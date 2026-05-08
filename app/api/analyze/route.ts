@@ -92,6 +92,7 @@ console.log("=== USER ID RECEIVED ===", userId);
           materials: parsed.materials,
           specs: parsed.specs,
           user_id: userId || null,
+          full_result: parsed,
         });
 
         if (dbError) {

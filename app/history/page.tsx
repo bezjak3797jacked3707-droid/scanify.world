@@ -207,19 +207,15 @@ const { data, error } = await supabase
           <EmptyState onScan={() => router.push("/scan")} />
         ) : (
           <div className="flex flex-col gap-3">
-            {sorted.map((scan) => (
-              <button
-                key={scan.id}
-                onClick={() =>
-                  router.push(
-                    `/result?imageUrl=${encodeURIComponent(scan.image_url)}&id=${scan.id}`
-                  )
-                }
-                className="w-full text-left rounded-2xl flex gap-4 p-4 items-center transition-all hover:opacity-80 active:scale-[0.98]"
-                style={{
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
-                }}
+           {sorted.map((scan) => (
+  <button
+    key={scan.id}
+    onClick={() => router.push(`/result?scanId=${scan.id}`)}
+    className="w-full text-left rounded-2xl flex gap-4 p-4 items-center transition-all hover:opacity-80 active:scale-[0.98]"
+    style={{
+      background: "var(--color-surface)",
+      border: "1px solid var(--color-border)",
+    }}
               >
                 {/* Square thumbnail */}
                 <div
