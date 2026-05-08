@@ -171,7 +171,7 @@ export default function ScanPage() {
     className="text-xs uppercase tracking-[0.25em]"
     style={{ color: "var(--color-gold)" }}
   >
-    {user ? `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining` : "Sign in to scan"}
+    {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
   </p>
 )}
         </div>
