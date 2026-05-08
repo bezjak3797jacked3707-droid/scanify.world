@@ -1,0 +1,204 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+interface LeaderboardEntry {
+  id: number;
+  image_url: string;
+  name: string;
+  current_value: string;
+  category: string;
+  display_name: string;
+  created_at: string;
+}
+
+export default function RankPage() {
+  const router = useRouter();
+  const [tab, setTab] = useState<"daily" | "weekly">("daily");
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      setLoading(true);
+
+      const now = new Date();
+      let startDate: string;
+
+      if (tab === "daily") {
+        const start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        startDate = start.toISOString();
+      } else {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 7);
+        startDate = start.toISOString();
+      }
+
+      const { data, error } = await supabase
+        .from("scan_results")
+        .select("id, image_url, name, current_value, category, display_name, created_at")
+        .gte("created_at", startDate)
+        .not("current_value", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error(error);
+        setLoading(false);
+        return;
+      }
+
+      // Sort by numeric value
+      const sorted = (data || [])
+        .map((entry) => ({
+          ...entry,
+          numericValue: parseFloat(
+            String(entry.current_value).replace(/[^0-9.]/g, "")
+          ),
+        }))
+        .filter((e) => !isNaN(e.numericValue))
+        .sort((a, b) => b.numericValue - a.numericValue)
+        .slice(0, 10);
+
+      setEntries(sorted);
+      setLoading(false);
+    }
+
+    fetchLeaderboard();
+  }, [tab]);
+
+  const medals = ["🥇", "🥈", "🥉"];
+
+  return (
+    <main
+      className="min-h-screen pb-24"
+      style={{ background: "var(--color-black)", color: "#ededed" }}
+    >
+      <div className="max-w-md mx-auto px-5 py-8 space-y-6">
+
+        {/* Header */}
+        <div className="text-center space-y-1">
+          <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
+            Leaderboard
+          </p>
+          <h1 className="text-3xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>
+            Top Scans
+          </h1>
+        </div>
+
+        {/* Tab switcher */}
+        <div
+          className="flex rounded-2xl p-1 gap-1"
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+        >
+          {(["daily", "weekly"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="flex-1 py-2 rounded-xl text-sm font-medium tracking-wider uppercase transition-all"
+              style={{
+                background: tab === t ? "var(--color-green)" : "transparent",
+                color: tab === t ? "var(--color-gold)" : "#555",
+              }}
+            >
+              {t === "daily" ? "Today" : "This Week"}
+            </button>
+          ))}
+        </div>
+
+        {/* Leaderboard */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="flex gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    background: "#7c3aed",
+                    animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite`,
+                  }}
+                />
+              ))}
+            </div>
+            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
+              Loading…
+            </p>
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="text-center py-20 space-y-3">
+            <p className="text-zinc-500 text-sm">No scans yet {tab === "daily" ? "today" : "this week"}.</p>
+            <button
+              onClick={() => router.push("/scan")}
+              className="px-6 py-3 rounded-xl text-sm font-semibold tracking-wider uppercase"
+              style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+            >
+              Be the first!
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {entries.map((entry, index) => (
+              <div
+                key={entry.id}
+                onClick={() => router.push(`/result?scanId=${entry.id}`)}
+                className="flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-opacity hover:opacity-80"
+                style={{
+                  background: index === 0
+                    ? "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, var(--color-surface) 70%)"
+                    : "var(--color-surface)",
+                  border: index === 0
+                    ? "1px solid rgba(201,168,76,0.4)"
+                    : "1px solid var(--color-border)",
+                }}
+              >
+                {/* Rank */}
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                  style={{
+                    background: index < 3 ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.05)",
+                    color: index < 3 ? "var(--color-gold)" : "#555",
+                  }}
+                >
+                  {index < 3 ? medals[index] : `#${index + 1}`}
+                </div>
+
+                {/* Image */}
+                <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0" style={{ background: "#1a1a1a" }}>
+                  {entry.image_url && (
+                    <img src={entry.image_url} alt={entry.name} className="w-full h-full object-cover" />
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{entry.name}</p>
+                  <p className="text-xs truncate" style={{ color: "#666" }}>
+                    {entry.display_name || "Anonymous"}
+                  </p>
+                  <p className="text-xs" style={{ color: "#444" }}>{entry.category}</p>
+                </div>
+
+                {/* Value */}
+                <div className="text-right flex-shrink-0">
+                  <p
+                    className="font-bold text-sm"
+                    style={{ color: index === 0 ? "var(--color-gold)" : "#00C853" }}
+                  >
+                    ${String(entry.current_value).replace("$", "")}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+export {};
