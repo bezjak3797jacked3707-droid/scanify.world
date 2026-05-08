@@ -185,6 +185,7 @@ export default function ResultContent() {
             imageUrl: imageUrlParam,
             userId: params.get("userId"),
             note: params.get("note"),
+            displayName: params.get("displayName"),
           }),
         });
         if (!res.ok) throw new Error("Analysis failed");
