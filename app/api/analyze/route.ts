@@ -10,7 +10,7 @@ async function sleep(ms: number) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageUrl, userId, note } = await req.json();
+    const { imageUrl, userId, note, displayName } = await req.json();
 console.log("=== USER ID RECEIVED ===", userId);
 
     if (!imageUrl) {
@@ -93,6 +93,7 @@ console.log("=== USER ID RECEIVED ===", userId);
           specs: parsed.specs,
           user_id: userId || null,
           full_result: parsed,
+          display_name: displayName || "Anonymous",
         });
 
         if (dbError) {
