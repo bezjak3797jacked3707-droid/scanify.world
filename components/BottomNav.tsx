@@ -13,7 +13,7 @@ const SLOTS = [
 
 function slotIndex(pathname: string) {
   if (pathname === "/")        return 0;
-  if (pathname === "/ranking") return 1;
+  if (pathname === "/rank") return 1;
   if (pathname === "/scan")    return 2;
   if (pathname === "/history") return 3;
   if (pathname === "/pricing") return 4;
