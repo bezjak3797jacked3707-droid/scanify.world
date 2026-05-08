@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const SLOTS = [
   { href: "/",        label: "Home"    },
-  { href: "/ranking", label: "Rank"    },
+  { href: "/rank", label: "Rank"    },
   null, // center — Scan button
   { href: "/history", label: "History" },
   { href: "/pricing", label: "Pricing" },
