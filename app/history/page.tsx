@@ -87,13 +87,20 @@ export default function HistoryPage() {
         1
       ).toISOString();
 
-      const { data, error } = await supabase
-        .from("scan_results")
-        .select(
-          "id, created_at, image_url, name, current_value, category, confidence"
-        )
-        .gte("created_at", startOfMonth)
-        .order("created_at", { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+
+if (!session) {
+  setScans([]);
+  setLoading(false);
+  return;
+}
+
+const { data, error } = await supabase
+  .from("scan_results")
+  .select("id, created_at, image_url, name, current_value, category, confidence")
+  .eq("user_id", session.user.id)
+  .gte("created_at", startOfMonth)
+  .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Failed to fetch scans:", error.message);
