@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [bestScan, setBestScan] = useState<BestScan | null>(null);
+  const [bestScans, setBestScans] = useState<BestScan[]>([]);
   const [totalScans, setTotalScans] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -60,15 +60,15 @@ export default function ProfilePage() {
         .eq("user_id", session.user.id);
 
       if (scans && scans.length > 0) {
-        const best = scans
-          .map((s) => ({
-            ...s,
-            numericValue: parseFloat(String(s.current_value).replace(/[^0-9.]/g, "")),
-          }))
-          .filter((s) => !isNaN(s.numericValue))
-          .sort((a, b) => b.numericValue - a.numericValue)[0];
+        const sorted = scans
+  .map((s) => ({
+    ...s,
+    numericValue: parseFloat(String(s.current_value).replace(/[^0-9.]/g, "")),
+  }))
+  .filter((s) => !isNaN(s.numericValue))
+  .sort((a, b) => b.numericValue - a.numericValue);
 
-        if (best) setBestScan(best);
+setBestScans(sorted.slice(0, 3));
       }
 
       setLoading(false);
@@ -167,34 +167,39 @@ export default function ProfilePage() {
         </div>
 
         {/* Best scan */}
-        {bestScan && (
-          <div
-            className="rounded-2xl p-5 space-y-3"
-            style={{
-              background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)",
-              border: "1px solid rgba(201,168,76,0.3)",
-            }}
-          >
-            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
-              🏆 Your Best Scan
-            </p>
-            <div className="flex gap-3 items-center">
-              {bestScan.image_url && (
-                <img
-                  src={bestScan.image_url}
-                  alt={bestScan.name}
-                  className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
-                />
-              )}
-              <div>
-                <p className="font-semibold text-sm">{bestScan.name}</p>
-                <p className="text-lg font-bold" style={{ color: "#00C853" }}>
-                  ${String(bestScan.current_value).replace("$", "")}
-                </p>
-              </div>
-            </div>
-          </div>
+        {bestScans.length > 0 && (
+  <div
+    className="rounded-2xl p-5 space-y-3"
+    style={{
+      background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)",
+      border: "1px solid rgba(201,168,76,0.3)",
+    }}
+  >
+    <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
+      🏆 Your Top Scans
+    </p>
+    {bestScans.map((scan, index) => (
+      <div key={index} className="flex gap-3 items-center">
+        <span className="text-lg flex-shrink-0">
+          {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
+        </span>
+        {scan.image_url && (
+          <img
+            src={scan.image_url}
+            alt={scan.name}
+            className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+          />
         )}
+        <div>
+          <p className="font-semibold text-sm">{scan.name}</p>
+          <p className="text-base font-bold" style={{ color: "#00C853" }}>
+            ${String(scan.current_value).replace("$", "")}
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
 
         {/* Upgrade button if free */}
         {!profile?.is_pro && (
