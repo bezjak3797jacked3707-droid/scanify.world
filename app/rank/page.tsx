@@ -41,7 +41,7 @@ export default function RankPage() {
         .from("scan_results")
         .select("id, image_url, name, current_value, category, display_name, created_at")
         .gte("created_at", startDate)
-        .not("current_value", "is", null)
+        .eq("on_leaderboard", true)
         .order("created_at", { ascending: false })
         .limit(50);
 
