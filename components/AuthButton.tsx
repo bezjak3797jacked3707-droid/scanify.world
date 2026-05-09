@@ -43,10 +43,11 @@ export default function AuthButton() {
     return (
       <div className="flex items-center gap-3">
         <img
-          src={user.user_metadata?.avatar_url || "/default-avatar.png"}
-          alt="Profile"
-          className="w-8 h-8 rounded-full border border-[#C9A84C]"
-        />
+  src={user.user_metadata?.avatar_url || "/default-avatar.png"}
+  alt="Profile"
+  className="w-8 h-8 rounded-full border border-[#C9A84C] cursor-pointer"
+  onClick={() => window.location.href = "/profile"}
+/>
         <button
           onClick={handleLogout}
           className="text-xs text-zinc-400 hover:text-white transition"
