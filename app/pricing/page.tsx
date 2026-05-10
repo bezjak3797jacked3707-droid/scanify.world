@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const FREE_FEATURES = [
   { label: "5 scans per month",        included: true  },
@@ -60,24 +64,51 @@ function CrossIcon() {
 }
 
 export default function PricingPage() {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  async function handleUpgrade(plan: "pro" | "business") {
+    setLoading(plan);
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      window.location.href = "/";
+      return;
+    }
+
+    const priceId = plan === "pro"
+      ? process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID
+      : process.env.NEXT_PUBLIC_STRIPE_BUSINESS_PRICE_ID;
+
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        priceId,
+        userId: session.user.id,
+        userEmail: session.user.email,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    }
+
+    setLoading(null);
+  }
+
   return (
     <main className="min-h-screen pb-12" style={{ background: "var(--color-black)", color: "#ededed" }}>
       <div className="px-5 pt-10">
 
-        {/* Header */}
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>
-            Pricing
-          </p>
-          <h1 className="text-4xl leading-tight mb-3" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>
-            Simple, honest pricing
-          </h1>
-          <p className="text-sm" style={{ color: "#555" }}>
-            Start free. Upgrade when you want more.
-          </p>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pricing</p>
+          <h1 className="text-4xl leading-tight mb-3" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>Simple, honest pricing</h1>
+          <p className="text-sm" style={{ color: "#555" }}>Start free. Upgrade when you want more.</p>
         </div>
 
-        {/* Plan cards */}
         <div className="flex flex-col gap-4 mb-8">
 
           {/* Free card */}
@@ -118,9 +149,14 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/upgrade" className="block w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
-              Upgrade to Pro
-            </Link>
+            <button
+              onClick={() => handleUpgrade("pro")}
+              disabled={loading === "pro"}
+              className="w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85 disabled:opacity-50"
+              style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+            >
+              {loading === "pro" ? "Loading..." : "Upgrade to Pro"}
+            </button>
           </div>
 
           {/* Business card */}
@@ -138,9 +174,14 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/upgrade" className="block w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85" style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", color: "var(--color-gold)" }}>
-              Get Business
-            </Link>
+            <button
+              onClick={() => handleUpgrade("business")}
+              disabled={loading === "business"}
+              className="w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85 disabled:opacity-50"
+              style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", color: "var(--color-gold)" }}
+            >
+              {loading === "business" ? "Loading..." : "Get Business"}
+            </button>
           </div>
 
         </div>
