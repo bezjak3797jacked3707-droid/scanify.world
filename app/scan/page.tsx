@@ -38,7 +38,7 @@ export default function ScanPage() {
     });
   }, []);
 
-  const scanLimit = 2;
+  const scanLimit = 5;
   const limitReached = !isPro && scansUsed >= scanLimit;
 
   function openPicker() {
@@ -79,7 +79,7 @@ export default function ScanPage() {
 
       console.log("=== SENDING USER ID ===", user?.id);
       router.push(
-        `/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}`
+        `/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&displayName=${encodeURIComponent(user?.user_metadata?.full_name ?? "Anonymous")}`
       );
     } catch (err) {
       console.error(err);

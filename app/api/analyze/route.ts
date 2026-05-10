@@ -25,7 +25,7 @@ console.log("=== USER ID RECEIVED ===", userId);
         .eq("id", userId)
         .single();
 
-      if (profile && !profile.is_pro && profile.scans_used >= 2) {
+      if (profile && !profile.is_pro && profile.scans_used >= 5) {
         return NextResponse.json(
           { error: "scan_limit_reached" },
           { status: 403 }
