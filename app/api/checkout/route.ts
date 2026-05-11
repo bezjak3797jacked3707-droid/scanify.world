@@ -25,8 +25,8 @@ export async function POST(req: NextRequest) {
       metadata: {
         userId,
       },
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/upgrade/success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
+      success_url: `https://scanify.world/upgrade/success`,
+cancel_url: `https://scanify.world/pricing`,
     });
 
     return NextResponse.json({ url: session.url });
