@@ -137,17 +137,15 @@ export default function ResultContent() {
             .select("full_result, image_url")
             .eq("id", scanId)
             .single();
-      
+
           if (error) throw new Error("Not found");
-      
+
           if (data?.full_result) {
-            // Load from saved result
             setResult(data.full_result);
             setImageUrlState(data.image_url);
             setTimeout(() => setChartDrawn(true), 1700);
             setLoading(false);
           } else if (data?.image_url) {
-            // Fall back to re-analyzing
             const res = await fetch("/api/analyze", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -162,7 +160,7 @@ export default function ResultContent() {
             setTimeout(() => setChartDrawn(true), 1700);
             setLoading(false);
           }
-        } catch (err) {
+        } catch {
           setError("Could not load scan.");
           setLoading(false);
         }
@@ -195,8 +193,7 @@ export default function ResultContent() {
         setTimeout(() => setShowConfetti(true), 200);
         setTimeout(() => setShowConfetti(false), 1200);
         setTimeout(() => setChartDrawn(true), 1700);
-      } catch (err) {
-        console.error(err);
+      } catch {
         setError("Could not analyze image. Please try again.");
       } finally {
         setLoading(false);
