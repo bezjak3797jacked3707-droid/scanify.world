@@ -20,18 +20,31 @@ console.log("=== USER ID RECEIVED ===", userId);
     // Check scan limits if user is logged in
     if (userId) {
       const { data: profile } = await supabase
-        .from("profiles")
-        .select("scans_used, is_pro")
-        .eq("id", userId)
-        .single();
+  .from("profiles")
+  .select("scans_used, is_pro, scans_reset_at")
+  .eq("id", userId)
+  .single();
 
-      if (profile && !profile.is_pro && profile.scans_used >= 5) {
-        return NextResponse.json(
-          { error: "scan_limit_reached" },
-          { status: 403 }
-        );
-      }
-    }
+        if (profile && !profile.is_pro) {
+          const now = new Date();
+          const resetAt = new Date(profile.scans_reset_at as string);
+          const isNewMonth = now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
+        
+          if (isNewMonth) {
+            await supabase
+              .from("profiles")
+              .update({ scans_used: 0, scans_reset_at: now.toISOString() })
+              .eq("id", userId);
+            profile.scans_used = 0;
+          }
+        
+          if (profile.scans_used >= 5) {
+            return NextResponse.json(
+              { error: "scan_limit_reached" },
+              { status: 403 }
+            );
+          }
+        }
 
     const imageResponse = await fetch(imageUrl);
     const imageBuffer = await imageResponse.arrayBuffer();
