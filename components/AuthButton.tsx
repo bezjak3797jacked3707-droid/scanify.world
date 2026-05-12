@@ -41,20 +41,13 @@ export default function AuthButton() {
 
   if (user) {
     return (
-      <div className="flex items-center gap-3">
-        <img
-  src={user.user_metadata?.avatar_url || "/default-avatar.png"}
-  alt="Profile"
-  className="w-8 h-8 rounded-full border border-[#C9A84C] cursor-pointer"
-  onClick={() => window.location.href = "/profile"}
-/>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-zinc-400 hover:text-white transition"
-        >
-          Sign out
-        </button>
-      </div>
+      <img
+        src={user.user_metadata?.avatar_url || "/default-avatar.png"}
+        alt="Profile"
+        className="w-8 h-8 rounded-full border border-[#C9A84C] cursor-pointer"
+        onClick={() => window.location.href = "/profile"}
+        style={{ boxShadow: "0 0 12px rgba(201,168,76,0.4), 0 0 24px rgba(201,168,76,0.15)" }}
+      />
     );
   }
 
