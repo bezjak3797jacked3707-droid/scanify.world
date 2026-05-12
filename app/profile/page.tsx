@@ -36,7 +36,6 @@ export default function ProfilePage() {
 
       setUser(session.user);
 
-      // Get profile
       const { data: profileData } = await supabase
         .from("profiles")
         .select("scans_used, is_pro")
@@ -45,7 +44,6 @@ export default function ProfilePage() {
 
       setProfile(profileData);
 
-      // Get total scans
       const { count } = await supabase
         .from("scan_results")
         .select("*", { count: "exact", head: true })
@@ -53,7 +51,6 @@ export default function ProfilePage() {
 
       setTotalScans(count || 0);
 
-      // Get best scan
       const { data: scans } = await supabase
         .from("scan_results")
         .select("name, current_value, image_url, created_at")
@@ -61,14 +58,14 @@ export default function ProfilePage() {
 
       if (scans && scans.length > 0) {
         const sorted = scans
-  .map((s) => ({
-    ...s,
-    numericValue: parseFloat(String(s.current_value).replace(/[^0-9.]/g, "")),
-  }))
-  .filter((s) => !isNaN(s.numericValue))
-  .sort((a, b) => b.numericValue - a.numericValue);
+          .map((s) => ({
+            ...s,
+            numericValue: parseFloat(String(s.current_value).replace(/[^0-9.]/g, "")),
+          }))
+          .filter((s) => !isNaN(s.numericValue))
+          .sort((a, b) => b.numericValue - a.numericValue);
 
-setBestScans(sorted.slice(0, 3));
+        setBestScans(sorted.slice(0, 3));
       }
 
       setLoading(false);
@@ -80,6 +77,20 @@ setBestScans(sorted.slice(0, 3));
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.push("/");
+  }
+
+  async function handleManageSubscription() {
+    const res = await fetch("/api/portal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: user?.email }),
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    }
   }
 
   if (loading) {
@@ -105,22 +116,11 @@ setBestScans(sorted.slice(0, 3));
         </div>
 
         {/* Profile card */}
-        <div
-          className="rounded-2xl p-6 flex flex-col items-center gap-4"
-          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
-        >
+        <div className="rounded-2xl p-6 flex flex-col items-center gap-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           {user?.user_metadata?.avatar_url ? (
-            <img
-              src={user.user_metadata.avatar_url}
-              alt="Profile"
-              className="w-20 h-20 rounded-full"
-              style={{ border: "2px solid var(--color-gold)" }}
-            />
+            <img src={user.user_metadata.avatar_url} alt="Profile" className="w-20 h-20 rounded-full" style={{ border: "2px solid var(--color-gold)" }} />
           ) : (
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold"
-              style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
-            >
+            <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
               {user?.email?.[0]?.toUpperCase()}
             </div>
           )}
@@ -130,35 +130,25 @@ setBestScans(sorted.slice(0, 3));
             <p className="text-sm" style={{ color: "#666" }}>{user?.email}</p>
           </div>
 
-          {/* Plan badge */}
-          <div
-            className="px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest"
-            style={{
-              background: profile?.is_pro ? "rgba(201,168,76,0.15)" : "rgba(27,77,62,0.3)",
-              border: profile?.is_pro ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-green)",
-              color: profile?.is_pro ? "var(--color-gold)" : "#00C853",
-            }}
-          >
+          <div className="px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest" style={{
+            background: profile?.is_pro ? "rgba(201,168,76,0.15)" : "rgba(27,77,62,0.3)",
+            border: profile?.is_pro ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-green)",
+            color: profile?.is_pro ? "var(--color-gold)" : "#00C853",
+          }}>
             {profile?.is_pro ? "⭐ Pro Member" : "Free Plan"}
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <div
-            className="rounded-2xl p-4 text-center"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
-          >
+          <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-3xl font-bold" style={{ color: "var(--color-gold)" }}>{totalScans}</p>
             <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "#555" }}>Total Scans</p>
           </div>
 
-          <div
-            className="rounded-2xl p-4 text-center"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
-          >
+          <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-3xl font-bold" style={{ color: "#00C853" }}>
-              {profile?.is_pro ? "∞" : `${Math.max(0, 2 - (profile?.scans_used || 0))}`}
+              {profile?.is_pro ? "∞" : `${Math.max(0, 5 - (profile?.scans_used || 0))}`}
             </p>
             <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "#555" }}>
               {profile?.is_pro ? "Unlimited" : "Scans Left"}
@@ -166,40 +156,29 @@ setBestScans(sorted.slice(0, 3));
           </div>
         </div>
 
-        {/* Best scan */}
+        {/* Best scans */}
         {bestScans.length > 0 && (
-  <div
-    className="rounded-2xl p-5 space-y-3"
-    style={{
-      background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)",
-      border: "1px solid rgba(201,168,76,0.3)",
-    }}
-  >
-    <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
-      🏆 Your Top Scans
-    </p>
-    {bestScans.map((scan, index) => (
-      <div key={index} className="flex gap-3 items-center">
-        <span className="text-lg flex-shrink-0">
-          {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
-        </span>
-        {scan.image_url && (
-          <img
-            src={scan.image_url}
-            alt={scan.name}
-            className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-          />
+          <div className="rounded-2xl p-5 space-y-3" style={{
+            background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)",
+            border: "1px solid rgba(201,168,76,0.3)",
+          }}>
+            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>🏆 Your Top Scans</p>
+            {bestScans.map((scan, index) => (
+              <div key={index} className="flex gap-3 items-center">
+                <span className="text-lg flex-shrink-0">{index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}</span>
+                {scan.image_url && (
+                  <img src={scan.image_url} alt={scan.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                )}
+                <div>
+                  <p className="font-semibold text-sm">{scan.name}</p>
+                  <p className="text-base font-bold" style={{ color: "#00C853" }}>
+                    ${String(scan.current_value).replace("$", "")}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-        <div>
-          <p className="font-semibold text-sm">{scan.name}</p>
-          <p className="text-base font-bold" style={{ color: "#00C853" }}>
-            ${String(scan.current_value).replace("$", "")}
-          </p>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
 
         {/* Upgrade button if free */}
         {!profile?.is_pro && (
@@ -209,6 +188,17 @@ setBestScans(sorted.slice(0, 3));
             style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
           >
             Upgrade to Pro
+          </button>
+        )}
+
+        {/* Manage subscription if pro */}
+        {profile?.is_pro && (
+          <button
+            onClick={handleManageSubscription}
+            className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70"
+            style={{ border: "1px solid var(--color-green)", color: "var(--color-green)" }}
+          >
+            Manage Subscription
           </button>
         )}
 
