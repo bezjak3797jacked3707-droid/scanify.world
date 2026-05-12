@@ -77,12 +77,10 @@ export default function ScanPage() {
 
       const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
 
-      console.log("=== SENDING USER ID ===", user?.id);
       router.push(
         `/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&displayName=${encodeURIComponent(user?.user_metadata?.full_name ?? "Anonymous")}`
       );
     } catch (err) {
-      console.error(err);
       setError("Upload failed. Check bucket setup and try again.");
       setIsUploading(false);
     }
@@ -167,13 +165,13 @@ export default function ScanPage() {
           </div>
 
           {!limitReached && (
-  <p
-    className="text-xs uppercase tracking-[0.25em]"
-    style={{ color: "var(--color-gold)" }}
-  >
-    {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
-  </p>
-)}
+            <p
+              className="text-xs uppercase tracking-[0.25em]"
+              style={{ color: "var(--color-gold)" }}
+            >
+              {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
+            </p>
+          )}
         </div>
       ) : (
         <div className="flex flex-col flex-1 px-5 py-6 gap-5">
