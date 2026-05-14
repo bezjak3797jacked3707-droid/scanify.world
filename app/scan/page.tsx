@@ -5,6 +5,45 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const maxSize = 1024;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height && width > maxSize) {
+        height = (height * maxSize) / width;
+        width = maxSize;
+      } else if (height > maxSize) {
+        width = (width * maxSize) / height;
+        height = maxSize;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          const compressed = new File([blob!], "scan.jpg", { type: "image/jpeg" });
+          URL.revokeObjectURL(url);
+          resolve(compressed);
+        },
+        "image/jpeg",
+        0.8
+      );
+    };
+
+    img.src = url;
+  });
+}
+
 export default function ScanPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -65,13 +104,13 @@ export default function ScanPage() {
     setError("");
 
     try {
-      const fileExt = file.name.split(".").pop() || "jpg";
-      const fileName = `${Date.now()}.${fileExt}`;
+      const compressed = await compressImage(file);
+      const fileName = `${Date.now()}.jpg`;
       const filePath = `uploads/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("scans")
-        .upload(filePath, file, { cacheControl: "3600", upsert: false });
+        .upload(filePath, compressed, { cacheControl: "3600", upsert: false });
 
       if (uploadError) throw uploadError;
 
@@ -106,24 +145,18 @@ export default function ScanPage() {
           {limitReached && (
             <div
               className="w-full max-w-[300px] rounded-2xl p-4 text-center space-y-3"
-              style={{
-                background: "var(--color-surface)",
-                border: "1px solid #7c3aed",
-              }}
+              style={{ background: "var(--color-surface)", border: "1px solid #7c3aed" }}
             >
               <p className="text-sm font-semibold" style={{ color: "#C9A84C" }}>
                 You've used your {scanLimit} free scans
               </p>
               <p className="text-xs" style={{ color: "#666" }}>
-                Upgrade to Pro for 99+ scans per month
+                Upgrade to Pro for 200 scans per month
               </p>
               <button
                 onClick={() => router.push("/pricing")}
                 className="w-full py-2 rounded-xl text-sm font-semibold tracking-wider uppercase"
-                style={{
-                  background: "var(--color-green)",
-                  color: "var(--color-gold)",
-                }}
+                style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
               >
                 Upgrade to Pro
               </button>
@@ -132,22 +165,10 @@ export default function ScanPage() {
 
           {/* Viewfinder with L-corner guides */}
           <div className="relative w-full max-w-[300px] aspect-square flex items-center justify-center">
-            <span
-              className="absolute top-0 left-0 w-9 h-9 border-t-[3px] border-l-[3px]"
-              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
-            />
-            <span
-              className="absolute top-0 right-0 w-9 h-9 border-t-[3px] border-r-[3px]"
-              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
-            />
-            <span
-              className="absolute bottom-0 left-0 w-9 h-9 border-b-[3px] border-l-[3px]"
-              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
-            />
-            <span
-              className="absolute bottom-0 right-0 w-9 h-9 border-b-[3px] border-r-[3px]"
-              style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }}
-            />
+            <span className="absolute top-0 left-0 w-9 h-9 border-t-[3px] border-l-[3px]" style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }} />
+            <span className="absolute top-0 right-0 w-9 h-9 border-t-[3px] border-r-[3px]" style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }} />
+            <span className="absolute bottom-0 left-0 w-9 h-9 border-b-[3px] border-l-[3px]" style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }} />
+            <span className="absolute bottom-0 right-0 w-9 h-9 border-b-[3px] border-r-[3px]" style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }} />
 
             <button
               onClick={openPicker}
@@ -165,10 +186,7 @@ export default function ScanPage() {
           </div>
 
           {!limitReached && (
-            <p
-              className="text-xs uppercase tracking-[0.25em]"
-              style={{ color: "var(--color-gold)" }}
-            >
+            <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--color-gold)" }}>
               {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
             </p>
           )}
@@ -207,12 +225,9 @@ export default function ScanPage() {
             disabled={isUploading}
             type="button"
             className="w-full rounded-2xl py-4 text-base font-semibold tracking-wider uppercase transition-opacity disabled:opacity-50"
-            style={{
-              background: "var(--color-green)",
-              color: "var(--color-gold)",
-            }}
+            style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
           >
-            {isUploading ? "Uploading…" : "Scan"}
+            {isUploading ? "Preparing scan…" : "Scan"}
           </button>
 
           {error && (

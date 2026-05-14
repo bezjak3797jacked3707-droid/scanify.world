@@ -162,7 +162,7 @@ if (parsed.error === "image_unclear") {
         lastError = err;
         console.error(`Attempt ${attempt} failed:`, err?.message);
         if (attempt < 3) {
-          await sleep(5000);
+          await sleep(2000);
         }
       }
     }
