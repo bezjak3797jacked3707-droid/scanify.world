@@ -95,13 +95,14 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   "description": "2-3 sentences with accurate specific details about this exact item",
   "materials": "specific materials used in this exact product",
   "specs": "key technical specs or features specific to this exact model",
-  "priceHistory": [
-    {"year": "2019", "price": 0},
+    "priceHistory": [
     {"year": "2020", "price": 0},
     {"year": "2021", "price": 0},
     {"year": "2022", "price": 0},
     {"year": "2023", "price": 0},
-    {"year": "2024", "price": 0}
+    {"year": "2024", "price": 0},
+    {"year": "2025", "price": 0},
+    {"year": "2026", "price": 0}
   ]
 }`;
 
