@@ -56,7 +56,17 @@ export async function POST(req: NextRequest) {
 
     const noteHint = note ? `The user has identified this item as: "${note}". Use this as a strong hint.` : "";
 
-    const prompt = `You are an expert appraiser with deep knowledge of absolutely any object including luxury goods, cars, motorcycles, boats, aircraft, electronics, smartphones, computers, cameras, watches, jewelry, art, sculptures, collectibles, sneakers, clothing, handbags, furniture, antiques, musical instruments, sports equipment, tools, toys, video games, consoles, books, wine, real estate, and any other physical item. ${noteHint} Analyze this image carefully and identify the exact make, model and variant. Return ONLY a JSON object with no extra text, no markdown, no backticks. Use this exact format:
+    const prompt = `You are an expert appraiser with deep knowledge of absolutely any physical object including luxury goods, cars, motorcycles, boats, aircraft, electronics, smartphones, computers, cameras, watches, jewelry, art, sculptures, collectibles, sneakers, clothing, handbags, furniture, antiques, musical instruments, sports equipment, tools, toys, video games, consoles, books, wine, and any other physical item.
+
+${noteHint}
+
+IMPORTANT RULES - You must follow these strictly:
+1. If the image contains adult content, sexual items, or anything inappropriate - respond with exactly: {"error": "inappropriate_content"}
+2. If the image shows a building, house, skyscraper, bridge, or any fixed structure - respond with exactly: {"error": "buildings_not_supported"}
+3. If the image is blurry, too dark, or you cannot identify any object - respond with exactly: {"error": "image_unclear"}
+4. Only analyze portable physical objects that can be bought and sold.
+
+If the image passes all rules, analyze it carefully and identify the exact make, model and variant. Return ONLY a JSON object with no extra text, no markdown, no backticks. Use this exact format:
 {
   "name": "full product name including exact model and variant",
   "currentValue": "estimated current market value in USD as a number only",
@@ -90,7 +100,17 @@ export async function POST(req: NextRequest) {
         ]);
 
         const text = result.response.text().trim();
-        const parsed = JSON.parse(text);
+const parsed = JSON.parse(text);
+
+if (parsed.error === "inappropriate_content") {
+  return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
+}
+if (parsed.error === "buildings_not_supported") {
+  return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
+}
+if (parsed.error === "image_unclear") {
+  return NextResponse.json({ error: "image_unclear" }, { status: 400 });
+}
 
         const { error: dbError } = await supabase.from("scan_results").insert({
           image_url: imageUrl,

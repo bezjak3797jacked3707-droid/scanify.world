@@ -114,6 +114,25 @@ function InfoCard({ label, content }: { label: string; content: string }) {
   );
 }
 
+function handleContentError(errorCode: string, setError: (msg: string) => void, setLoading: (val: boolean) => void) {
+  if (errorCode === "inappropriate_content") {
+    setError("This item cannot be scanned. Scanify does not support inappropriate content.");
+    setLoading(false);
+    return true;
+  }
+  if (errorCode === "buildings_not_supported") {
+    setError("Buildings and structures cannot be scanned. Scanify is for physical objects only.");
+    setLoading(false);
+    return true;
+  }
+  if (errorCode === "image_unclear") {
+    setError("Image is too unclear to analyze. Please take a clearer photo.");
+    setLoading(false);
+    return true;
+  }
+  return false;
+}
+
 export default function ResultContent() {
   const router = useRouter();
 
@@ -151,9 +170,12 @@ export default function ResultContent() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ imageUrl: data.image_url }),
             });
+            const scanData = await res.json();
+
+            if (handleContentError(scanData.error, setError, setLoading)) return;
             if (!res.ok) throw new Error("Analysis failed");
-            const result = await res.json();
-            setResult(result);
+
+            setResult(scanData);
             setImageUrlState(data.image_url);
             setTimeout(() => setShowConfetti(true), 200);
             setTimeout(() => setShowConfetti(false), 1200);
@@ -186,9 +208,12 @@ export default function ResultContent() {
             displayName: params.get("displayName"),
           }),
         });
+        const scanData = await res.json();
+
+        if (handleContentError(scanData.error, setError, setLoading)) return;
         if (!res.ok) throw new Error("Analysis failed");
-        const data = await res.json();
-        setResult(data);
+
+        setResult(scanData);
         setImageUrlState(imageUrlParam);
         setTimeout(() => setShowConfetti(true), 200);
         setTimeout(() => setShowConfetti(false), 1200);
