@@ -328,7 +328,13 @@ export default function ResultContent() {
                   )}
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={priceHistory} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
-                      <XAxis dataKey="year" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <XAxis 
+  dataKey="year" 
+  tick={{ fill: "#555", fontSize: 11 }} 
+  axisLine={false} 
+  tickLine={false}
+  tickFormatter={(value, index) => index === priceHistory.length - 1 ? "Now" : value}
+/>
                       <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
                       <Tooltip content={<ChartTooltip />} />
                       <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
