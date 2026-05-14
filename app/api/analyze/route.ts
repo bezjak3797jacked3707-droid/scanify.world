@@ -56,26 +56,45 @@ export async function POST(req: NextRequest) {
 
     const noteHint = note ? `The user has identified this item as: "${note}". Use this as a strong hint.` : "";
 
-    const prompt = `You are an expert appraiser with deep knowledge of absolutely any physical object including luxury goods, cars, motorcycles, boats, aircraft, electronics, smartphones, computers, cameras, watches, jewelry, art, sculptures, collectibles, sneakers, clothing, handbags, furniture, antiques, musical instruments, sports equipment, tools, toys, video games, consoles, books, wine, and any other physical item.
+    const prompt = `You are the world's most accurate AI appraiser with expert knowledge of every physical object that exists. Your job is to identify items with extreme precision and provide accurate market valuations.
 
 ${noteHint}
 
-IMPORTANT RULES - You must follow these strictly:
+STRICT RULES:
 1. If the image contains adult content, sexual items, or anything inappropriate - respond with exactly: {"error": "inappropriate_content"}
 2. If the image shows a building, house, skyscraper, bridge, or any fixed structure - respond with exactly: {"error": "buildings_not_supported"}
 3. If the image is blurry, too dark, or you cannot identify any object - respond with exactly: {"error": "image_unclear"}
 4. Only analyze portable physical objects that can be bought and sold.
 
-If the image passes all rules, analyze it carefully and identify the exact make, model and variant. Return ONLY a JSON object with no extra text, no markdown, no backticks. Use this exact format:
+IDENTIFICATION RULES:
+- Look extremely carefully at ALL visible details: logos, badges, model numbers, color, shape, design elements, stitching, hardware, labels
+- For cars: identify the exact make, model, year, trim level and any special edition (e.g. "2019 Lamborghini Huracán Performante" not just "Lamborghini")
+- For shoes: identify exact colorway and edition (e.g. "Nike Air Jordan 1 Retro High OG Chicago 2015" not just "Jordan 1")
+- For electronics: identify exact model number and variant (e.g. "Apple iPhone 15 Pro Max 256GB Natural Titanium" not just "iPhone")
+- For watches: identify exact reference number if visible (e.g. "Rolex Submariner Date 126610LN" not just "Rolex")
+- For clothing: identify brand, collection, and season if possible
+- Never guess vaguely - if you can see a logo or badge always use it
+- If the user provided a hint about the item, use it heavily to guide identification
+
+VALUATION RULES:
+- Research current real market prices not just retail prices
+- For cars use current market value not MSRP unless asked
+- For sneakers use current resale market value (StockX/GOAT prices)
+- For electronics use current used market value
+- For collectibles use recent auction results
+- Be specific with numbers - avoid wide ranges
+- Price history should show realistic yearly market fluctuations
+
+Return ONLY a JSON object with no extra text, no markdown, no backticks:
 {
-  "name": "full product name including exact model and variant",
-  "currentValue": "estimated current market value in USD as a number only",
-  "originalPrice": "original retail price in USD as a number only",
-  "category": "product category",
-  "confidence": "confidence percentage as number only",
-  "description": "2-3 sentence description",
-  "materials": "main materials used",
-  "specs": "key specs or features",
+  "name": "extremely specific and accurate product name with exact model, variant, year, and edition",
+  "currentValue": "current market value in USD as a number only no dollar sign",
+  "originalPrice": "original retail price in USD as a number only no dollar sign",
+  "category": "specific product category",
+  "confidence": "your confidence percentage as a number only",
+  "description": "2-3 sentences with accurate specific details about this exact item",
+  "materials": "specific materials used in this exact product",
+  "specs": "key technical specs or features specific to this exact model",
   "priceHistory": [
     {"year": "2019", "price": 0},
     {"year": "2020", "price": 0},
