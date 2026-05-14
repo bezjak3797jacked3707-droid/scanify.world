@@ -84,11 +84,12 @@ VALUATION RULES:
 - For collectibles use recent auction results
 - Be specific with numbers - avoid wide ranges
 - Price history should show realistic yearly market fluctuations
-
+- The current year is 2026. Always provide 2026 market values for currentValue not older prices
+- The priceHistory must end with 2026 as the most recent year showing the same value as currentValue
 Return ONLY a JSON object with no extra text, no markdown, no backticks:
 {
   "name": "extremely specific and accurate product name with exact model, variant, year, and edition",
-  "currentValue": "current market value in USD as a number only no dollar sign",
+  "currentValue": "the current 2026 market value in USD as a number only no dollar sign",
   "originalPrice": "original retail price in USD as a number only no dollar sign",
   "category": "specific product category",
   "confidence": "your confidence percentage as a number only",
