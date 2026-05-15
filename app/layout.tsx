@@ -17,6 +17,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Scanify",
   description: "Scan anything. Know its value.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
