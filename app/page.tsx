@@ -27,25 +27,25 @@ const reviews = [
     initials: "SM",
     name: "Sarah M.",
     stars: 5,
-    comment: "this makes reselling so much easier with scanify! im lucky i found this out!",
+    comment: "Found a lamp at a garage sale, scanned it on the spot and found out it was a vintage Murano glass piece worth $600. Paid $8 for it.",
   },
   {
     initials: "JT",
-    name: "James T.",
+    name: "TOM B.",
     stars: 5,
-    comment: "i just sold my old shoes for more then i bought them for!",
+    comment: "Scanned my Jordan 4s — had them listed $120 under value. Changed it immediately.",
   },
   {
     initials: "AL",
-    name: "Amara L.",
+    name: "Amara T.",
     stars: 4,
-    comment: "taking a picture of it is so much easier then doing so much research.",
+    comment: "Got my MacBook's exact specs and market value in 10 seconds. No more guessing.",
   },
   {
     initials: "CR",
-    name: "Carlos R.",
+    name: "Daniel K.",
     stars: 5,
-    comment: "getting to know the materials its made of is such a luxury.",
+    comment: "My girlfriend thinks I'm scanning everything in the house now. She's not wrong.",
   },
 ];
 
