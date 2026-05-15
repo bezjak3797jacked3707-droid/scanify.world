@@ -290,14 +290,14 @@ export default function ResultContent() {
                 <div className="relative" style={{ overflow: "visible" }}>
                   <ConfettiBurst active={showConfetti} />
                   <p className="text-xl font-bold" style={{ color: "#00C853", animation: "price-glow-pulse 2.5s ease-in-out infinite", textShadow: "0 0 10px #00C853, 0 0 20px rgba(0,200,83,0.4)" }}>
-                    {"$" + String(result.currentValue).replace("$", "")}
+                  {"$" + Number(String(result.currentValue).replace(/[^0-9.]/g, "")).toLocaleString()}
                   </p>
                 </div>
               </StatCard>
 
               <StatCard label="Original Price">
                 <p className="text-xl font-bold" style={{ color: "#00C853" }}>
-                  {"$" + String(result.originalPrice).replace("$", "")}
+                {"$" + Number(String(result.originalPrice).replace(/[^0-9.]/g, "")).toLocaleString()}
                 </p>
               </StatCard>
 
