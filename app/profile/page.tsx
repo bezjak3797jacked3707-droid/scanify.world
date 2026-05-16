@@ -151,7 +151,7 @@ export default function ProfilePage() {
             {profile?.is_pro ? "200+" : `${Math.max(0, 5 - (profile?.scans_used || 0))}`}
             </p>
             <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "#555" }}>
-              {profile?.is_pro ? "Unlimited" : "Scans Left"}
+            {profile?.is_pro ? "Scans / Month" : "Scans Left"}
             </p>
           </div>
         </div>

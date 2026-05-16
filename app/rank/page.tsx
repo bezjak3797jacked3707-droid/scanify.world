@@ -61,7 +61,7 @@ export default function RankPage() {
         }))
         .filter((e) => !isNaN(e.numericValue))
         .sort((a, b) => b.numericValue - a.numericValue)
-        .slice(0, 10);
+        .slice(0, 50);
 
       setEntries(sorted);
       setLoading(false);
