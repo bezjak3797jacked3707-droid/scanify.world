@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
           profile.scans_used = 0;
         }
 
-        if (profile.scans_used >= 5) {
+        if (profile.scans_used >= 3) {
           return NextResponse.json(
             { error: "scan_limit_reached" },
             { status: 403 }

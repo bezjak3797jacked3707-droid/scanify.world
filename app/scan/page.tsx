@@ -77,7 +77,7 @@ export default function ScanPage() {
     });
   }, []);
 
-  const scanLimit = 5;
+  const scanLimit = 3;
   const limitReached = !isPro && scansUsed >= scanLimit;
 
   function openPicker() {
