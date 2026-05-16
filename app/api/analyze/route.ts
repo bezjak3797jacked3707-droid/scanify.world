@@ -87,6 +87,12 @@ VALUATION RULES:
 - The current year is 2026. Always provide 2026 market values for currentValue not older prices
 - The priceHistory must end with 2026 as the most recent year showing the same value as currentValue
 Return ONLY a JSON object with no extra text, no markdown, no backticks:
+- Be conservative with valuations — when in doubt price lower not higher
+- For cars use private party sale value not dealer prices
+- For sneakers use average sold prices not asking prices
+- For electronics account for depreciation and used condition
+- Do not overestimate — users should be pleasantly surprised not disappointed
+- If the item shows wear or age factor that into the price
 {
   "name": "extremely specific and accurate product name with exact model, variant, year, and edition",
   "currentValue": "the current 2026 market value in USD as a number only no dollar sign",
