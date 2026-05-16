@@ -17,6 +17,7 @@ interface LeaderboardEntry {
 export default function RankPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"daily" | "weekly">("daily");
+  const [filter, setFilter] = useState<"all" | "cars">("all");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,13 +38,19 @@ export default function RankPage() {
         startDate = start.toISOString();
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("scan_results")
         .select("id, image_url, name, current_value, category, display_name, created_at")
         .gte("created_at", startDate)
         .eq("on_leaderboard", true)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(200);
+
+      if (filter === "cars") {
+        query = query.or("category.ilike.%car%,category.ilike.%supercar%,category.ilike.%hypercar%,category.ilike.%vehicle%,category.ilike.%auto%,category.ilike.%sports car%,category.ilike.%luxury car%");
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error(error);
@@ -51,13 +58,10 @@ export default function RankPage() {
         return;
       }
 
-      // Sort by numeric value
       const sorted = (data || [])
         .map((entry) => ({
           ...entry,
-          numericValue: parseFloat(
-            String(entry.current_value).replace(/[^0-9.]/g, "")
-          ),
+          numericValue: parseFloat(String(entry.current_value).replace(/[^0-9.]/g, "")),
         }))
         .filter((e) => !isNaN(e.numericValue))
         .sort((a, b) => b.numericValue - a.numericValue)
@@ -68,9 +72,10 @@ export default function RankPage() {
     }
 
     fetchLeaderboard();
-  }, [tab]);
+  }, [tab, filter]);
 
   const medals = ["🥇", "🥈", "🥉"];
+
   async function handleReport(id: number) {
     await supabase
       .from("scan_results")
@@ -78,28 +83,19 @@ export default function RankPage() {
       .eq("id", id);
     alert("Reported! Thank you.");
   }
+
   return (
-    <main
-      className="min-h-screen pb-24"
-      style={{ background: "var(--color-black)", color: "#ededed" }}
-    >
+    <main className="min-h-screen pb-24" style={{ background: "var(--color-black)", color: "#ededed" }}>
       <div className="max-w-md mx-auto px-5 py-8 space-y-6">
 
         {/* Header */}
         <div className="text-center space-y-1">
-          <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
-            Leaderboard
-          </p>
-          <h1 className="text-3xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>
-            Top Scans
-          </h1>
+          <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Leaderboard</p>
+          <h1 className="text-3xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>Top Scans</h1>
         </div>
 
         {/* Tab switcher */}
-        <div
-          className="flex rounded-2xl p-1 gap-1"
-          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
-        >
+        <div className="flex rounded-2xl p-1 gap-1" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           {(["daily", "weekly"] as const).map((t) => (
             <button
               key={t}
@@ -115,30 +111,49 @@ export default function RankPage() {
           ))}
         </div>
 
+        {/* Filter buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilter("all")}
+            className="flex-1 py-2 rounded-xl text-xs font-medium tracking-wider uppercase transition-all"
+            style={{
+              background: filter === "all" ? "var(--color-gold)" : "transparent",
+              color: filter === "all" ? "#0a0a0a" : "#555",
+              border: "1px solid",
+              borderColor: filter === "all" ? "var(--color-gold)" : "#222",
+            }}
+          >
+            All Items
+          </button>
+          <button
+            onClick={() => setFilter("cars")}
+            className="flex-1 py-2 rounded-xl text-xs font-medium tracking-wider uppercase transition-all"
+            style={{
+              background: filter === "cars" ? "var(--color-gold)" : "transparent",
+              color: filter === "cars" ? "#0a0a0a" : "#555",
+              border: "1px solid",
+              borderColor: filter === "cars" ? "var(--color-gold)" : "#222",
+            }}
+          >
+            🚗 Cars Only
+          </button>
+        </div>
+
         {/* Leaderboard */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="flex gap-3">
               {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 3,
-                    background: "#7c3aed",
-                    animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite`,
-                  }}
-                />
+                <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
               ))}
             </div>
-            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
-              Loading…
-            </p>
+            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Loading…</p>
           </div>
         ) : entries.length === 0 ? (
           <div className="text-center py-20 space-y-3">
-            <p className="text-zinc-500 text-sm">No scans yet {tab === "daily" ? "today" : "this week"}.</p>
+            <p className="text-zinc-500 text-sm">
+              No {filter === "cars" ? "car " : ""}scans yet {tab === "daily" ? "today" : "this week"}.
+            </p>
             <button
               onClick={() => router.push("/scan")}
               className="px-6 py-3 rounded-xl text-sm font-semibold tracking-wider uppercase"
@@ -155,12 +170,8 @@ export default function RankPage() {
                 onClick={() => router.push(`/result?scanId=${entry.id}`)}
                 className="flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-opacity hover:opacity-80"
                 style={{
-                  background: index === 0
-                    ? "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, var(--color-surface) 70%)"
-                    : "var(--color-surface)",
-                  border: index === 0
-                    ? "1px solid rgba(201,168,76,0.4)"
-                    : "1px solid var(--color-border)",
+                  background: index === 0 ? "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, var(--color-surface) 70%)" : "var(--color-surface)",
+                  border: index === 0 ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-border)",
                 }}
               >
                 {/* Rank */}
@@ -184,31 +195,26 @@ export default function RankPage() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{entry.name}</p>
-                  <p className="text-xs truncate" style={{ color: "#666" }}>
-                    {entry.display_name || "Anonymous"}
-                  </p>
+                  <p className="text-xs truncate" style={{ color: "#666" }}>{entry.display_name || "Anonymous"}</p>
                   <p className="text-xs" style={{ color: "#444" }}>{entry.category}</p>
                 </div>
 
                 {/* Value + Report */}
-<div className="text-right flex-shrink-0 flex flex-col items-end gap-2">
-  <p
-    className="font-bold text-sm"
-    style={{ color: index === 0 ? "var(--color-gold)" : "#00C853" }}
-  >
-    ${String(entry.current_value).replace("$", "")}
-  </p>
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      handleReport(entry.id);
-    }}
-    className="text-xs uppercase tracking-wider transition-opacity hover:opacity-70"
-    style={{ color: "#333" }}
-  >
-    Report
-  </button>
-</div>
+                <div className="text-right flex-shrink-0 flex flex-col items-end gap-2">
+                  <p className="font-bold text-sm" style={{ color: index === 0 ? "var(--color-gold)" : "#00C853" }}>
+                    ${Number(String(entry.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
+                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReport(entry.id);
+                    }}
+                    className="text-xs uppercase tracking-wider transition-opacity hover:opacity-70"
+                    style={{ color: "#333" }}
+                  >
+                    Report
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -217,4 +223,5 @@ export default function RankPage() {
     </main>
   );
 }
+
 export {};
