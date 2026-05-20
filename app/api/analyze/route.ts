@@ -52,8 +52,6 @@ export async function POST(req: NextRequest) {
     const base64Image = Buffer.from(imageBuffer).toString("base64");
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const noteHint = note ? `The user has identified this item as: "${note}". Use this as a strong hint.` : "";
 
     const prompt = `You are the world's most accurate AI appraiser with expert knowledge of every physical object that exists. Your job is to identify items with extreme precision and provide accurate market valuations.
@@ -86,13 +84,14 @@ VALUATION RULES:
 - Price history should show realistic yearly market fluctuations
 - The current year is 2026. Always provide 2026 market values for currentValue not older prices
 - The priceHistory must end with 2026 as the most recent year showing the same value as currentValue
-Return ONLY a JSON object with no extra text, no markdown, no backticks:
 - Be conservative with valuations — when in doubt price lower not higher
 - For cars use private party sale value not dealer prices
 - For sneakers use average sold prices not asking prices
 - For electronics account for depreciation and used condition
 - Do not overestimate — users should be pleasantly surprised not disappointed
 - If the item shows wear or age factor that into the price
+
+Return ONLY a JSON object with no extra text, no markdown, no backticks:
 {
   "name": "extremely specific and accurate product name with exact model, variant, year, and edition",
   "currentValue": "the current 2026 market value in USD as a number only no dollar sign",
@@ -102,7 +101,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   "description": "2-3 sentences with accurate specific details about this exact item",
   "materials": "specific materials used in this exact product",
   "specs": "key technical specs or features specific to this exact model",
-    "priceHistory": [
+  "priceHistory": [
     {"year": "2020", "price": 0},
     {"year": "2021", "price": 0},
     {"year": "2022", "price": 0},
@@ -113,10 +112,15 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   ]
 }`;
 
+    const models = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash"];
     let lastError: any;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+
+    for (const modelName of models) {
       try {
-        const result = await model.generateContent([
+        const currentModel = genAI.getGenerativeModel({ model: modelName });
+        console.log(`Trying model: ${modelName}`);
+
+        const result = await currentModel.generateContent([
           prompt,
           {
             inlineData: {
@@ -127,17 +131,17 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
         ]);
 
         const text = result.response.text().trim();
-const parsed = JSON.parse(text);
+        const parsed = JSON.parse(text);
 
-if (parsed.error === "inappropriate_content") {
-  return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
-}
-if (parsed.error === "buildings_not_supported") {
-  return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
-}
-if (parsed.error === "image_unclear") {
-  return NextResponse.json({ error: "image_unclear" }, { status: 400 });
-}
+        if (parsed.error === "inappropriate_content") {
+          return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
+        }
+        if (parsed.error === "buildings_not_supported") {
+          return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
+        }
+        if (parsed.error === "image_unclear") {
+          return NextResponse.json({ error: "image_unclear" }, { status: 400 });
+        }
 
         const { error: dbError } = await supabase.from("scan_results").insert({
           image_url: imageUrl,
@@ -166,10 +170,8 @@ if (parsed.error === "image_unclear") {
 
       } catch (err: any) {
         lastError = err;
-        console.error(`Attempt ${attempt} failed:`, err?.message);
-        if (attempt < 3) {
-          await sleep(2000);
-        }
+        console.error(`Model ${modelName} failed:`, err?.message);
+        await sleep(1000);
       }
     }
 
