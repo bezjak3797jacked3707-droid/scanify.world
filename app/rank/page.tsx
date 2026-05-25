@@ -40,7 +40,7 @@ export default function RankPage() {
 
       let query = supabase
         .from("scan_results")
-        .select("id, image_url, name, current_value, category, display_name, created_at")
+        .select("id, image_url, name, current_value, category, display_name, created_at, user_id")
         .gte("created_at", startDate)
         .eq("on_leaderboard", true)
         .order("created_at", { ascending: false })
@@ -58,14 +58,21 @@ export default function RankPage() {
         return;
       }
 
-      const sorted = (data || [])
-        .map((entry) => ({
-          ...entry,
-          numericValue: parseFloat(String(entry.current_value).replace(/[^0-9.]/g, "")),
-        }))
-        .filter((e) => !isNaN(e.numericValue))
-        .sort((a, b) => b.numericValue - a.numericValue)
-        .slice(0, 50);
+      // Count how many times each user appears and limit to 10
+const userCount: Record<string, number> = {};
+const sorted = (data || [])
+  .map((entry) => ({
+    ...entry,
+    numericValue: parseFloat(String(entry.current_value).replace(/[^0-9.]/g, "")),
+  }))
+  .filter((e) => !isNaN(e.numericValue))
+  .sort((a, b) => b.numericValue - a.numericValue)
+  .filter((entry) => {
+    const key = entry.user_id || entry.display_name || "anonymous";
+    userCount[key] = (userCount[key] || 0) + 1;
+    return userCount[key] <= 10;
+  })
+  .slice(0, 50);
 
       setEntries(sorted);
       setLoading(false);
