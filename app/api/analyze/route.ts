@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { supabase } from "@/lib/supabase";
 
 export const maxDuration = 300;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -112,67 +114,74 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   ]
 }`;
 
-    const models = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash"];
+    // Try Gemini models first
+    const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash"];
     let lastError: any;
 
-    for (const modelName of models) {
+    for (const modelName of geminiModels) {
       try {
+        console.log(`Trying Gemini model: ${modelName}`);
         const currentModel = genAI.getGenerativeModel({ model: modelName });
-        console.log(`Trying model: ${modelName}`);
 
         const result = await currentModel.generateContent([
           prompt,
-          {
-            inlineData: {
-              mimeType,
-              data: base64Image,
-            },
-          },
+          { inlineData: { mimeType, data: base64Image } },
         ]);
 
         const text = result.response.text().trim();
         const parsed = JSON.parse(text);
 
-        if (parsed.error === "inappropriate_content") {
-          return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
-        }
-        if (parsed.error === "buildings_not_supported") {
-          return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
-        }
-        if (parsed.error === "image_unclear") {
-          return NextResponse.json({ error: "image_unclear" }, { status: 400 });
-        }
+        if (parsed.error === "inappropriate_content") return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
+        if (parsed.error === "buildings_not_supported") return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
+        if (parsed.error === "image_unclear") return NextResponse.json({ error: "image_unclear" }, { status: 400 });
 
-        const { error: dbError } = await supabase.from("scan_results").insert({
-          image_url: imageUrl,
-          name: parsed.name,
-          current_value: parsed.currentValue,
-          original_price: parsed.originalPrice,
-          category: parsed.category,
-          confidence: parsed.confidence,
-          description: parsed.description,
-          materials: parsed.materials,
-          specs: parsed.specs,
-          user_id: userId || null,
-          full_result: parsed,
-          display_name: displayName || "Anonymous",
-        });
-
-        if (dbError) {
-          console.error("DB save error:", dbError.message);
-        }
-
-        if (userId) {
-          await supabase.rpc("increment_scans", { user_id_input: userId });
-        }
-
+        await saveAndReturn(parsed, imageUrl, userId, displayName);
         return NextResponse.json(parsed);
 
       } catch (err: any) {
         lastError = err;
-        console.error(`Model ${modelName} failed:`, err?.message);
+        console.error(`Gemini model ${modelName} failed:`, err?.message);
         await sleep(1000);
       }
+    }
+
+    // All Gemini models failed — try OpenAI GPT-4o as final fallback
+    try {
+      console.log("Trying OpenAI GPT-4o as fallback...");
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        max_tokens: 1500,
+      });
+
+      const text = response.choices[0].message.content?.trim() || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+
+      if (parsed.error === "inappropriate_content") return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
+      if (parsed.error === "buildings_not_supported") return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
+      if (parsed.error === "image_unclear") return NextResponse.json({ error: "image_unclear" }, { status: 400 });
+
+      await saveAndReturn(parsed, imageUrl, userId, displayName);
+      return NextResponse.json(parsed);
+
+    } catch (err: any) {
+      lastError = err;
+      console.error("OpenAI fallback failed:", err?.message);
     }
 
     throw lastError;
@@ -181,5 +190,28 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
     console.error("=== ANALYZE ERROR ===");
     console.error("Message:", error?.message);
     return NextResponse.json({ error: "Analysis failed", detail: error?.message }, { status: 500 });
+  }
+}
+
+async function saveAndReturn(parsed: any, imageUrl: string, userId: string | null, displayName: string | null) {
+  const { error: dbError } = await supabase.from("scan_results").insert({
+    image_url: imageUrl,
+    name: parsed.name,
+    current_value: parsed.currentValue,
+    original_price: parsed.originalPrice,
+    category: parsed.category,
+    confidence: parsed.confidence,
+    description: parsed.description,
+    materials: parsed.materials,
+    specs: parsed.specs,
+    user_id: userId || null,
+    full_result: parsed,
+    display_name: displayName || "Anonymous",
+  });
+
+  if (dbError) console.error("DB save error:", dbError.message);
+
+  if (userId) {
+    await supabase.rpc("increment_scans", { user_id_input: userId });
   }
 }
