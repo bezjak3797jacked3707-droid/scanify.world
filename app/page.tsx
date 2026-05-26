@@ -82,8 +82,15 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+  
+    await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, message }),
+    });
+  
     setSubmitted(true);
     setEmail("");
     setMessage("");
