@@ -142,6 +142,7 @@ export default function ResultContent() {
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [chartDrawn, setChartDrawn] = useState(false);
+  const [isLoadingFromHistory, setIsLoadingFromHistory] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -149,6 +150,8 @@ export default function ResultContent() {
     const scanId = params.get("scanId");
 
     if (scanId) {
+      setIsLoadingFromHistory(true);
+
       async function loadFromDb() {
         try {
           const { data, error } = await supabase
@@ -251,7 +254,9 @@ export default function ResultContent() {
             <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
           ))}
         </div>
-        <p className="text-sm uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Analyzing your item…</p>
+        <p className="text-sm uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
+          {isLoadingFromHistory ? "Loading scan…" : "Analyzing your item…"}
+        </p>
       </main>
     );
   }
@@ -290,14 +295,14 @@ export default function ResultContent() {
                 <div className="relative" style={{ overflow: "visible" }}>
                   <ConfettiBurst active={showConfetti} />
                   <p className="text-xl font-bold" style={{ color: "#00C853", animation: "price-glow-pulse 2.5s ease-in-out infinite", textShadow: "0 0 10px #00C853, 0 0 20px rgba(0,200,83,0.4)" }}>
-                  {"$" + Number(String(result.currentValue).replace(/[^0-9.]/g, "")).toLocaleString()}
+                    {"$" + Number(String(result.currentValue).replace(/[^0-9.]/g, "")).toLocaleString()}
                   </p>
                 </div>
               </StatCard>
 
               <StatCard label="Original Price">
                 <p className="text-xl font-bold" style={{ color: "#00C853" }}>
-                {"$" + Number(String(result.originalPrice).replace(/[^0-9.]/g, "")).toLocaleString()}
+                  {"$" + Number(String(result.originalPrice).replace(/[^0-9.]/g, "")).toLocaleString()}
                 </p>
               </StatCard>
 
@@ -328,13 +333,13 @@ export default function ResultContent() {
                   )}
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={priceHistory} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
-                    <XAxis 
-  dataKey="year" 
-  tick={{ fill: "#555", fontSize: 11 }} 
-  axisLine={false} 
-  tickLine={false}
-  tickFormatter={(value, index) => index === priceHistory.length - 1 ? "Now" : value}
-/>
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fill: "#555", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value, index) => index === priceHistory.length - 1 ? "Now" : value}
+                      />
                       <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
                       <Tooltip content={<ChartTooltip />} />
                       <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
