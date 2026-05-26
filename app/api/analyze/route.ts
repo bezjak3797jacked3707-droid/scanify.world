@@ -158,7 +158,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
             ],
           },
         ],
-        max_tokens: 1500,
+        max_tokens: 2000,
       });
 
       const text = response.choices[0].message.content?.trim() || "";
