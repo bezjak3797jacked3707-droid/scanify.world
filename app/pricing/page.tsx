@@ -36,7 +36,7 @@ const BUSINESS_FEATURES = [
 ];
 
 const COMPARISON = [
-  { label: "Monthly scans",       free: "5",      pro: "200",       business: "Unlimited" },
+  { label: "Monthly scans",       free: "3",      pro: "200",       business: "Unlimited" },
   { label: "AI appraisal",        free: "Basic",  pro: "Priority",  business: "Priority"  },
   { label: "Current value",       free: true,     pro: true,        business: true        },
   { label: "Price history graph", free: false,    pro: true,        business: true        },
@@ -141,7 +141,7 @@ export default function PricingPage() {
             </div>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pro</p>
             <div className="flex items-end gap-1 mb-5">
-              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$4.99</span>
+            <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$7.99</span>
               <span className="text-xs pb-1.5" style={{ color: "#555" }}>/mo</span>
             </div>
             <ul className="flex flex-col gap-3 flex-1 mb-5">
