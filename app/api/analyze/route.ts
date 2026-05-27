@@ -175,7 +175,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
       console.log("Trying Claude 3.5 Sonnet...");
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-5",
-        max_tokens: 2500,
+        max_tokens: 1200,
         messages: [
           {
             role: "user",
@@ -223,7 +223,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
             ],
           },
         ],
-        max_tokens: 2500,
+        max_tokens: 1200,
       });
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
