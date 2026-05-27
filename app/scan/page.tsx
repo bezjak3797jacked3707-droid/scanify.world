@@ -162,7 +162,26 @@ export default function ScanPage() {
               </button>
             </div>
           )}
-
+{!user && (
+  <div
+    className="w-full max-w-[300px] rounded-2xl p-4 text-center space-y-3"
+    style={{ background: "var(--color-surface)", border: "1px solid rgba(201,168,76,0.3)" }}
+  >
+    <p className="text-sm font-semibold" style={{ color: "var(--color-gold)" }}>
+      Sign in to start scanning
+    </p>
+    <p className="text-xs" style={{ color: "#666" }}>
+      Create a free account to scan any item and discover its value instantly.
+    </p>
+    <button
+      onClick={() => router.push("/")}
+      className="w-full py-2 rounded-xl text-sm font-semibold tracking-wider uppercase"
+      style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+    >
+      Sign In
+    </button>
+  </div>
+)}
           {/* Viewfinder with L-corner guides */}
           <div className="relative w-full max-w-[300px] aspect-square flex items-center justify-center">
             <span className="absolute top-0 left-0 w-9 h-9 border-t-[3px] border-l-[3px]" style={{ borderColor: limitReached ? "#333" : "var(--color-green)" }} />
