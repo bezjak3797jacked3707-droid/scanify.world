@@ -106,8 +106,8 @@ STRICT RULES:
 4. Only analyze portable physical objects that can be bought and sold.
 
 RESPONSE LENGTH RULES - MUST FOLLOW:
-- description: maximum 4 sentences, no exceptions
-- materials: exactly 3 items, one short line each, no bold formatting
+"description": "MAXIMUM 2 sentences. Very concise. One sentence on what it is, one sentence on what makes it special.",
+"materials": "EXACTLY 3 materials. VERY SHORT. Format: Material - use. Maximum 8 words per line. Example: Carbon fiber - lightweight body panels.",
 - specs: exactly 4 items, one line each
 - Violating these length rules is not acceptable¨
 
