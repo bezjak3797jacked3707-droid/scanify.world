@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
 
 export const maxDuration = 300;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,6 +35,18 @@ async function saveResult(parsed: any, imageUrl: string, userId: string | null, 
   if (userId) {
     await supabase.rpc("increment_scans", { user_id_input: userId });
   }
+}
+
+function parseJSON(text: string) {
+  const clean = text.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+}
+
+function checkContentErrors(parsed: any) {
+  if (parsed.error === "inappropriate_content") return "inappropriate_content";
+  if (parsed.error === "buildings_not_supported") return "buildings_not_supported";
+  if (parsed.error === "image_unclear") return "image_unclear";
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -81,6 +95,8 @@ export async function POST(req: NextRequest) {
 
     const prompt = `You are the world's most accurate AI appraiser with expert knowledge of every physical object that exists. Your job is to identify items with extreme precision and provide accurate market valuations.
 
+CRITICAL INSTRUCTION: You must provide EXTREMELY detailed and comprehensive responses. Do not summarize. Do not be brief. Write as much detail as possible for description, materials and specs. Users are paying for detailed professional appraisals. Short responses are unacceptable.
+
 ${noteHint}
 
 STRICT RULES:
@@ -123,9 +139,9 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   "originalPrice": "original retail price in USD as a number only no dollar sign",
   "category": "specific product category",
   "confidence": "your confidence percentage as a number only",
-  "description": "2-3 sentences with accurate specific details about this exact item",
-  "materials": "specific materials used in this exact product",
-  "specs": "key technical specs or features specific to this exact model",
+  "description": "Write 5-7 detailed sentences covering the items history, what makes it special, notable features, market reception, and interesting facts",
+  "materials": "List every single material used. For each material describe where it is used and why. Minimum 5-6 materials with descriptions",
+  "specs": "List minimum 6-8 specific technical specifications with exact numbers and measurements",
   "priceHistory": [
     {"year": "2020", "price": 0},
     {"year": "2021", "price": 0},
@@ -137,10 +153,59 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   ]
 }`;
 
-    // Try OpenAI GPT-4o first (most reliable)
+    // PRIMARY: Try Gemini 2.5 Flash first (cheapest, most detailed)
+    try {
+      console.log("Trying Gemini 2.5 Flash...");
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { mimeType, data: base64Image } },
+      ]);
+      const parsed = parseJSON(result.response.text().trim());
+      const contentError = checkContentErrors(parsed);
+      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+      await saveResult(parsed, imageUrl, userId, displayName);
+      return NextResponse.json(parsed);
+    } catch (err: any) {
+      console.error("Gemini 2.5 Flash failed:", err?.message);
+    }
+
+    // FALLBACK 1: Claude 3.5 Sonnet (reliable, great detail)
+    try {
+      console.log("Trying Claude 3.5 Sonnet...");
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-5",
+        max_tokens: 2500,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                  data: base64Image,
+                },
+              },
+              { type: "text", text: prompt },
+            ],
+          },
+        ],
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const parsed = parseJSON(text);
+      const contentError = checkContentErrors(parsed);
+      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+      await saveResult(parsed, imageUrl, userId, displayName);
+      return NextResponse.json(parsed);
+    } catch (err: any) {
+      console.error("Claude failed:", err?.message);
+    }
+
+    // FALLBACK 2: OpenAI GPT-4o (most reliable)
     try {
       console.log("Trying OpenAI GPT-4o...");
-
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -158,56 +223,19 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
             ],
           },
         ],
-        max_tokens: 2000,
+        max_tokens: 2500,
       });
-
       const text = response.choices[0].message.content?.trim() || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-
-      if (parsed.error === "inappropriate_content") return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
-      if (parsed.error === "buildings_not_supported") return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
-      if (parsed.error === "image_unclear") return NextResponse.json({ error: "image_unclear" }, { status: 400 });
-
+      const parsed = parseJSON(text);
+      const contentError = checkContentErrors(parsed);
+      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName);
       return NextResponse.json(parsed);
-
-    } catch (openaiErr: any) {
-      console.error("OpenAI failed:", openaiErr?.message);
+    } catch (err: any) {
+      console.error("OpenAI failed:", err?.message);
     }
 
-    // Fallback to Gemini models
-    const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash"];
-    let lastError: any;
-
-    for (const modelName of geminiModels) {
-      try {
-        console.log(`Trying Gemini fallback: ${modelName}`);
-        const currentModel = genAI.getGenerativeModel({ model: modelName });
-
-        const result = await currentModel.generateContent([
-          prompt,
-          { inlineData: { mimeType, data: base64Image } },
-        ]);
-
-        const text = result.response.text().trim();
-        const parsed = JSON.parse(text);
-
-        if (parsed.error === "inappropriate_content") return NextResponse.json({ error: "inappropriate_content" }, { status: 400 });
-        if (parsed.error === "buildings_not_supported") return NextResponse.json({ error: "buildings_not_supported" }, { status: 400 });
-        if (parsed.error === "image_unclear") return NextResponse.json({ error: "image_unclear" }, { status: 400 });
-
-        await saveResult(parsed, imageUrl, userId, displayName);
-        return NextResponse.json(parsed);
-
-      } catch (err: any) {
-        lastError = err;
-        console.error(`Gemini ${modelName} failed:`, err?.message);
-        await sleep(1000);
-      }
-    }
-
-    throw lastError;
+    return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
 
   } catch (error: any) {
     console.error("=== ANALYZE ERROR ===");
