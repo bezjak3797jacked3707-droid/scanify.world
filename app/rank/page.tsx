@@ -72,7 +72,7 @@ const sorted = (data || [])
     userCount[key] = (userCount[key] || 0) + 1;
     return userCount[key] <= 10;
   })
-  .slice(0, 50);
+  .slice(0, 100);
 
       setEntries(sorted);
       setLoading(false);
