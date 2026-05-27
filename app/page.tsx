@@ -161,7 +161,7 @@ export default function Home() {
               className="w-full text-center py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-85"
               style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
             >
-              {user ? "Scan Now" : "sign in for free scans!"}
+              {user ? "Scan Now" : "try free scan!"}
             </Link>
             {!user && (
               <Link
