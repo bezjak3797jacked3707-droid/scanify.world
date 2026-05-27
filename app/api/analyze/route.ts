@@ -105,6 +105,12 @@ STRICT RULES:
 3. If the image is blurry, too dark, or you cannot identify any object - respond with exactly: {"error": "image_unclear"}
 4. Only analyze portable physical objects that can be bought and sold.
 
+RESPONSE LENGTH RULES - MUST FOLLOW:
+- description: maximum 4 sentences, no exceptions
+- materials: exactly 3 items, one short line each, no bold formatting
+- specs: exactly 4 items, one line each
+- Violating these length rules is not acceptable¨
+
 IDENTIFICATION RULES:
 - Look extremely carefully at ALL visible details: logos, badges, model numbers, color, shape, design elements, stitching, hardware, labels
 - For cars: identify the exact make, model, year, trim level and any special edition (e.g. "2019 Lamborghini Huracán Performante" not just "Lamborghini")
@@ -139,9 +145,9 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   "originalPrice": "original retail price in USD as a number only no dollar sign",
   "category": "specific product category",
   "confidence": "your confidence percentage as a number only",
-  "description": "Write 5-7 detailed sentences covering the items history, what makes it special, notable features, market reception, and interesting facts",
-  "materials": "List every single material used. For each material describe where it is used and why. Minimum 5-6 materials with descriptions",
-  "specs": "List minimum 6-8 specific technical specifications with exact numbers and measurements",
+  "description": "Write 4-5 sentences covering what makes this item special, its history and market context. Be specific but concise.",
+"materials": "List exactly 3 key materials. One line each. Format: Material — brief reason why used.",
+"specs": "List exactly 4 key specs with exact numbers. One line each. Format: Spec: value.",
   "priceHistory": [
     {"year": "2020", "price": 0},
     {"year": "2021", "price": 0},
