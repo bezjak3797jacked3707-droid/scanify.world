@@ -141,7 +141,7 @@ export default function PricingPage() {
             </div>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pro</p>
             <div className="flex items-end gap-1 mb-5">
-            <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$7.99</span>
+            <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$6.99</span>
               <span className="text-xs pb-1.5" style={{ color: "#555" }}>/mo</span>
             </div>
             <ul className="flex flex-col gap-3 flex-1 mb-5">
@@ -166,7 +166,7 @@ export default function PricingPage() {
           <div className="rounded-3xl p-5 flex flex-col" style={{ background: "linear-gradient(155deg, rgba(201,168,76,0.08) 0%, var(--color-surface) 55%)", border: "1px solid rgba(201,168,76,0.3)" }}>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Business</p>
             <div className="flex items-end gap-1 mb-5">
-              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$9.99</span>
+              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$14.99</span>
               <span className="text-xs pb-1.5" style={{ color: "#555" }}>/mo</span>
             </div>
             <ul className="flex flex-col gap-3 flex-1 mb-5">
