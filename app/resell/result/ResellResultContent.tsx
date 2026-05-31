@@ -122,8 +122,8 @@ export default function ResellResultContent() {
           ))}
         </div>
         <p className="text-sm uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
-          {new URLSearchParams(window.location.search).get("scanId") ? "Loading scan…" : "Scanning resell markets…"}
-        </p>
+  Scanning resell markets…
+</p>
       </main>
     );
   }
