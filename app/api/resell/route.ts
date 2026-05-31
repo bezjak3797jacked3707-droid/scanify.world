@@ -131,7 +131,25 @@ Analyze the item and return ONLY a JSON object with no extra text, no markdown, 
       ]);
       const parsed = parseJSON(result.response.text().trim());
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) await supabase.rpc("increment_scans", { user_id_input: userId });
+      if (userId) {
+        await supabase.from("scan_results").insert({
+          image_url: imageUrl,
+          name: parsed.name,
+          current_value: parsed.bestPrice,
+          original_price: parsed.originalPrice,
+          category: parsed.category,
+          confidence: "100",
+          description: parsed.sellingTips,
+          materials: "",
+          specs: "",
+          user_id: userId,
+          full_result: parsed,
+          display_name: "Anonymous",
+          on_leaderboard: false,
+          scan_type: "resell",
+        });
+        await supabase.rpc("increment_scans", { user_id_input: userId });
+      }
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell Gemini failed:", err?.message);
@@ -157,7 +175,25 @@ Analyze the item and return ONLY a JSON object with no extra text, no markdown, 
       const text = response.content[0].type === "text" ? response.content[0].text : "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) await supabase.rpc("increment_scans", { user_id_input: userId });
+      if (userId) {
+        await supabase.from("scan_results").insert({
+          image_url: imageUrl,
+          name: parsed.name,
+          current_value: parsed.bestPrice,
+          original_price: parsed.originalPrice,
+          category: parsed.category,
+          confidence: "100",
+          description: parsed.sellingTips,
+          materials: "",
+          specs: "",
+          user_id: userId,
+          full_result: parsed,
+          display_name: "Anonymous",
+          on_leaderboard: false,
+          scan_type: "resell",
+        });
+        await supabase.rpc("increment_scans", { user_id_input: userId });
+      }
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell Claude failed:", err?.message);
@@ -180,7 +216,25 @@ Analyze the item and return ONLY a JSON object with no extra text, no markdown, 
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) await supabase.rpc("increment_scans", { user_id_input: userId });
+      if (userId) {
+        await supabase.from("scan_results").insert({
+          image_url: imageUrl,
+          name: parsed.name,
+          current_value: parsed.bestPrice,
+          original_price: parsed.originalPrice,
+          category: parsed.category,
+          confidence: "100",
+          description: parsed.sellingTips,
+          materials: "",
+          specs: "",
+          user_id: userId,
+          full_result: parsed,
+          display_name: "Anonymous",
+          on_leaderboard: false,
+          scan_type: "resell",
+        });
+        await supabase.rpc("increment_scans", { user_id_input: userId });
+      }
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell OpenAI failed:", err?.message);
