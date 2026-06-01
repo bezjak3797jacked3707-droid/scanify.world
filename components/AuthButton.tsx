@@ -41,13 +41,15 @@ export default function AuthButton() {
 
   if (user) {
     return (
-      <img
-        src={user.user_metadata?.avatar_url || "/default-avatar.png"}
-        alt="Profile"
-        className="w-8 h-8 rounded-full border border-[#C9A84C] cursor-pointer"
-        onClick={() => window.location.href = "/profile"}
-        style={{ boxShadow: "0 0 12px rgba(201,168,76,0.4), 0 0 24px rgba(201,168,76,0.15)" }}
-      />
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = "/profile"}>
+  <img
+    src={user.user_metadata?.avatar_url || "/default-avatar.png"}
+    alt="Profile"
+    className="w-8 h-8 rounded-full border border-[#C9A84C]"
+    style={{ boxShadow: "0 0 12px rgba(201,168,76,0.4), 0 0 24px rgba(201,168,76,0.15)" }}
+  />
+  <span className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Profile</span>
+</div>
     );
   }
 
