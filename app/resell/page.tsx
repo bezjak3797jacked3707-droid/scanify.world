@@ -15,7 +15,6 @@ const PLATFORMS = [
   "StockX",
   "GOAT",
   "Chrono24",
-  "Mobile.de",
 ];
 
 async function compressImage(file: File): Promise<File> {
