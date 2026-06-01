@@ -8,37 +8,45 @@
   --color-gold: #C9A84C;
   --color-surface: #111111;
   --color-border: #1e1e1e;
+
+  --color-text-primary: #ededed;
+  --color-text-secondary: #aaa;
+  --color-text-muted: #555;
+  --color-text-faint: #333;
+  --color-text-dark: #1a1a1a;
+  --color-card-alt: rgba(255,255,255,0.01);
+  --color-thumb: #1a1a1a;
 }
 
 :root.light {
-  --color-black: #f5f5f0;
+  --color-black: #f0f0eb;
   --color-brown: #f0e6d3;
   --color-green: #1B4D3E;
   --color-green-bright: #00C853;
-  --color-gold: #C9A84C;
+  --color-gold: #B8922A;
   --color-surface: #ffffff;
-  --color-border: #e0e0e0;
+  --color-border: #d0d0d0;
+
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #444;
+  --color-text-muted: #777;
+  --color-text-faint: #999;
+  --color-text-dark: #ededed;
+  --color-card-alt: rgba(0,0,0,0.02);
+  --color-thumb: #e0e0e0;
 }
 
 @theme inline {
   --color-background: var(--color-black);
-  --color-foreground: #ededed;
+  --color-foreground: var(--color-text-primary);
   --font-sans: var(--font-body);
 }
 
 body {
   background: var(--color-black);
-  color: #ededed;
+  color: var(--color-text-primary);
   font-family: var(--font-body), system-ui, sans-serif;
-}
-
-.light body,
-.light {
-  color: #1a1a1a;
-}
-
-.light .bg-surface {
-  background: #ffffff;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {

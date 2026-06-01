@@ -83,23 +83,14 @@ export default function ResellPage() {
     if (!file || !user) return;
     setIsUploading(true);
     setError("");
-
     try {
       const compressed = await compressImage(file);
       const fileName = `${Date.now()}.jpg`;
       const filePath = `uploads/resell_${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("scans")
-        .upload(filePath, compressed, { cacheControl: "3600", upsert: false });
-
+      const { error: uploadError } = await supabase.storage.from("scans").upload(filePath, compressed, { cacheControl: "3600", upsert: false });
       if (uploadError) throw uploadError;
-
       const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
-
-      router.push(
-        `/resell/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user.id}&platform=${encodeURIComponent(preferredPlatform)}`
-      );
+      router.push(`/resell/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user.id}&platform=${encodeURIComponent(preferredPlatform)}`);
     } catch (err) {
       setError("Upload failed. Please try again.");
       setIsUploading(false);
@@ -111,7 +102,7 @@ export default function ResellPage() {
       <main className="min-h-screen flex flex-col items-center justify-center px-6 gap-4" style={{ background: "var(--color-black)" }}>
         <div className="rounded-2xl p-6 text-center space-y-3 w-full max-w-sm" style={{ background: "var(--color-surface)", border: "1px solid rgba(201,168,76,0.3)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--color-gold)" }}>Sign in to use Resell Scanner</p>
-          <p className="text-xs" style={{ color: "#666" }}>Find out what your item is worth on resale platforms instantly.</p>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Find out what your item is worth on resale platforms instantly.</p>
           <button onClick={() => router.push("/")} className="w-full py-2 rounded-xl text-sm font-semibold tracking-wider uppercase" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
             Sign In
           </button>
@@ -121,21 +112,19 @@ export default function ResellPage() {
   }
 
   return (
-    <main className="min-h-screen pb-24" style={{ background: "var(--color-black)", color: "#ededed" }}>
+    <main className="min-h-screen pb-24" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       <div className="max-w-md mx-auto px-5 py-8 space-y-6">
 
-        {/* Header */}
         <div className="text-center space-y-1">
           <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Resell Scanner</p>
           <h1 className="text-3xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>What's It Worth?</h1>
-          <p className="text-xs" style={{ color: "#555" }}>Find the best price across reselling platforms</p>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Find the best price across reselling platforms</p>
         </div>
 
-        {/* Platform selector */}
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-widest" style={{ color: "#555" }}>Preferred Platform</p>
+          <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>Preferred Platform</p>
           <div className="grid grid-cols-3 gap-2">
             {PLATFORMS.map((p) => (
               <button
@@ -144,7 +133,7 @@ export default function ResellPage() {
                 className="py-2 px-3 rounded-xl text-xs font-medium transition-all"
                 style={{
                   background: preferredPlatform === p ? "var(--color-green)" : "var(--color-surface)",
-                  color: preferredPlatform === p ? "var(--color-gold)" : "#555",
+                  color: preferredPlatform === p ? "var(--color-gold)" : "var(--color-text-muted)",
                   border: "1px solid",
                   borderColor: preferredPlatform === p ? "var(--color-green)" : "var(--color-border)",
                 }}
@@ -155,17 +144,11 @@ export default function ResellPage() {
           </div>
         </div>
 
-        {/* Upload area */}
         {!preview ? (
           <div
             onClick={() => !limitReached && fileInputRef.current?.click()}
             className="w-full rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
-            style={{
-              background: "var(--color-surface)",
-              border: "2px dashed var(--color-border)",
-              minHeight: 180,
-              opacity: limitReached ? 0.5 : 1,
-            }}
+            style={{ background: "var(--color-surface)", border: "2px dashed var(--color-border)", minHeight: 180, opacity: limitReached ? 0.5 : 1 }}
           >
             <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "var(--color-green)" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -177,7 +160,7 @@ export default function ResellPage() {
               {limitReached ? "Upgrade to scan more" : "Tap to upload photo"}
             </p>
             {!limitReached && (
-              <p className="text-xs" style={{ color: "#555" }}>
+              <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                 {isPro ? "Unlimited scans" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
               </p>
             )}
@@ -187,35 +170,24 @@ export default function ResellPage() {
             <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden">
               <img src={preview} alt="Item to resell" className="w-full h-full object-cover" />
             </div>
-            <button
-              onClick={() => { setPreview(null); setFile(null); }}
-              className="text-xs uppercase tracking-widest block ml-auto transition-opacity hover:opacity-70"
-              style={{ color: "var(--color-gold)" }}
-            >
+            <button onClick={() => { setPreview(null); setFile(null); }} className="text-xs uppercase tracking-widest block ml-auto transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
               Retake photo
             </button>
           </div>
         )}
 
-        {/* Limit warning */}
         {limitReached && (
           <div className="rounded-2xl p-4 text-center space-y-3" style={{ background: "var(--color-surface)", border: "1px solid #7c3aed" }}>
-            <p className="text-sm font-semibold" style={{ color: "#C9A84C" }}>You've used your {scanLimit} free scans</p>
-            <p className="text-xs" style={{ color: "#666" }}>Upgrade to Pro for 200 scans per month</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--color-gold)" }}>You've used your {scanLimit} free scan</p>
+            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Upgrade to Pro for 200 scans per month</p>
             <button onClick={() => router.push("/pricing")} className="w-full py-2 rounded-xl text-sm font-semibold tracking-wider uppercase" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
               Upgrade to Pro
             </button>
           </div>
         )}
 
-        {/* Scan button */}
         {preview && !limitReached && (
-          <button
-            onClick={handleResellScan}
-            disabled={isUploading}
-            className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity disabled:opacity-50"
-            style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
-          >
+          <button onClick={handleResellScan} disabled={isUploading} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity disabled:opacity-50" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
             {isUploading ? "Preparing…" : "Get Resell Value"}
           </button>
         )}
