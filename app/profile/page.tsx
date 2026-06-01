@@ -148,10 +148,10 @@ export default function ProfilePage() {
 
           <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-3xl font-bold" style={{ color: "#00C853" }}>
-            {profile?.is_pro ? "200+" : `${Math.max(0, 5 - (profile?.scans_used || 0))}`}
+              {profile?.is_pro ? "200+" : `${Math.max(0, 3 - (profile?.scans_used || 0))}`}
             </p>
             <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "#555" }}>
-            {profile?.is_pro ? "Scans / Month" : "Scans Left"}
+              {profile?.is_pro ? "Scans / Month" : "Scans Left"}
             </p>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default function ProfilePage() {
                 <div>
                   <p className="font-semibold text-sm">{scan.name}</p>
                   <p className="text-base font-bold" style={{ color: "#00C853" }}>
-                    ${String(scan.current_value).replace("$", "")}
+                    ${Number(String(scan.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -201,6 +201,15 @@ export default function ProfilePage() {
             Manage Subscription
           </button>
         )}
+
+        {/* View History */}
+        <button
+          onClick={() => router.push("/history")}
+          className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70"
+          style={{ border: "1px solid var(--color-border)", color: "#aaa" }}
+        >
+          View History
+        </button>
 
         {/* Sign out */}
         <button
