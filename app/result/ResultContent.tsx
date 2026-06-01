@@ -54,22 +54,7 @@ function ConfettiBurst({ active }: { active: boolean }) {
     <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20, overflow: "visible" }}>
       <div className="absolute left-1/2 top-1/2" style={{ transform: "translate(-50%,-50%)" }}>
         {CONFETTI.map((p, i) => (
-          <span
-            key={i}
-            className="absolute rounded-sm"
-            style={{
-              width: p.size,
-              height: p.size,
-              background: p.color,
-              animationName: "confetti-burst",
-              animationDuration: "0.85s",
-              animationTimingFunction: "ease-out",
-              animationDelay: p.delay,
-              animationFillMode: "forwards",
-              "--tx": p.tx,
-              "--ty": p.ty,
-            } as React.CSSProperties}
-          />
+          <span key={i} className="absolute rounded-sm" style={{ width: p.size, height: p.size, background: p.color, animationName: "confetti-burst", animationDuration: "0.85s", animationTimingFunction: "ease-out", animationDelay: p.delay, animationFillMode: "forwards", "--tx": p.tx, "--ty": p.ty } as React.CSSProperties} />
         ))}
       </div>
     </div>
@@ -89,9 +74,9 @@ function TrophyIcon() {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: "#111111", border: "1px solid #1e1e1e", borderRadius: 10, padding: "8px 14px" }}>
-      <p style={{ color: "#C9A84C", fontSize: 11, marginBottom: 2 }}>{label}</p>
-      <p style={{ color: "#ededed", fontSize: 15, fontWeight: 600 }}>${payload[0].value.toLocaleString()}</p>
+    <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 10, padding: "8px 14px" }}>
+      <p style={{ color: "var(--color-gold)", fontSize: 11, marginBottom: 2 }}>{label}</p>
+      <p style={{ color: "var(--color-text-primary)", fontSize: 15, fontWeight: 600 }}>${payload[0].value.toLocaleString()}</p>
     </div>
   );
 }
@@ -99,7 +84,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl p-4 flex flex-col gap-1.5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-      <p className="text-xs uppercase tracking-widest" style={{ color: "#555" }}>{label}</p>
+      <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>{label}</p>
       {children}
     </div>
   );
@@ -109,33 +94,20 @@ function InfoCard({ label, content }: { label: string; content: string }) {
   return (
     <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
       <h3 className="text-xs uppercase tracking-widest mb-2" style={{ color: "var(--color-gold)" }}>{label}</h3>
-      <p className="text-sm leading-relaxed" style={{ color: "#aaa" }}>{content}</p>
+      <p className="text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{content}</p>
     </div>
   );
 }
 
 function handleContentError(errorCode: string, setError: (msg: string) => void, setLoading: (val: boolean) => void) {
-  if (errorCode === "inappropriate_content") {
-    setError("This item cannot be scanned. Scanify does not support inappropriate content.");
-    setLoading(false);
-    return true;
-  }
-  if (errorCode === "buildings_not_supported") {
-    setError("Buildings and structures cannot be scanned. Scanify is for physical objects only.");
-    setLoading(false);
-    return true;
-  }
-  if (errorCode === "image_unclear") {
-    setError("Image is too unclear to analyze. Please take a clearer photo.");
-    setLoading(false);
-    return true;
-  }
+  if (errorCode === "inappropriate_content") { setError("This item cannot be scanned. Scanify does not support inappropriate content."); setLoading(false); return true; }
+  if (errorCode === "buildings_not_supported") { setError("Buildings and structures cannot be scanned. Scanify is for physical objects only."); setLoading(false); return true; }
+  if (errorCode === "image_unclear") { setError("Image is too unclear to analyze. Please take a clearer photo."); setLoading(false); return true; }
   return false;
 }
 
 export default function ResultContent() {
   const router = useRouter();
-
   const [imageUrlState, setImageUrlState] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,33 +123,20 @@ export default function ResultContent() {
 
     if (scanId) {
       setIsLoadingFromHistory(true);
-
       async function loadFromDb() {
         try {
-          const { data, error } = await supabase
-            .from("scan_results")
-            .select("full_result, image_url")
-            .eq("id", scanId)
-            .single();
-
+          const { data, error } = await supabase.from("scan_results").select("full_result, image_url").eq("id", scanId).single();
           if (error) throw new Error("Not found");
-
           if (data?.full_result) {
             setResult(data.full_result);
             setImageUrlState(data.image_url);
             setTimeout(() => setChartDrawn(true), 1700);
             setLoading(false);
           } else if (data?.image_url) {
-            const res = await fetch("/api/analyze", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ imageUrl: data.image_url }),
-            });
+            const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imageUrl: data.image_url }) });
             const scanData = await res.json();
-
             if (handleContentError(scanData.error, setError, setLoading)) return;
             if (!res.ok) throw new Error("Analysis failed");
-
             setResult(scanData);
             setImageUrlState(data.image_url);
             setTimeout(() => setShowConfetti(true), 200);
@@ -194,28 +153,18 @@ export default function ResultContent() {
       return;
     }
 
-    if (!imageUrlParam) {
-      setLoading(false);
-      return;
-    }
+    if (!imageUrlParam) { setLoading(false); return; }
 
     async function analyze() {
       try {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageUrl: imageUrlParam,
-            userId: params.get("userId"),
-            note: params.get("note"),
-            displayName: params.get("displayName"),
-          }),
+          body: JSON.stringify({ imageUrl: imageUrlParam, userId: params.get("userId"), note: params.get("note"), displayName: params.get("displayName") }),
         });
         const scanData = await res.json();
-
         if (handleContentError(scanData.error, setError, setLoading)) return;
         if (!res.ok) throw new Error("Analysis failed");
-
         setResult(scanData);
         setImageUrlState(imageUrlParam);
         setTimeout(() => setShowConfetti(true), 200);
@@ -227,12 +176,10 @@ export default function ResultContent() {
         setLoading(false);
       }
     }
-
     analyze();
   }, []);
 
   const confidenceNum = parseInt(result?.confidence ?? "0", 10);
-
   const confidenceStyle = useMemo(() => {
     if (confidenceNum >= 80) return { color: "#00C853", textShadow: "0 0 10px #00C853, 0 0 20px rgba(0,200,83,0.4)" };
     if (confidenceNum >= 50) return { color: "#F59E0B", textShadow: "0 0 10px #F59E0B, 0 0 20px rgba(245,158,11,0.4)" };
@@ -275,7 +222,7 @@ export default function ResultContent() {
   }
 
   return (
-    <main className="min-h-screen pb-10" style={{ background: "var(--color-black)", color: "#ededed" }}>
+    <main className="min-h-screen pb-10" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <div className="flex flex-col gap-5 px-5 py-6">
 
         {imageUrlState && (
@@ -318,7 +265,7 @@ export default function ResultContent() {
               </StatCard>
 
               <StatCard label="Category">
-                <p className="text-xl font-bold" style={{ color: "#ededed" }}>{result.category}</p>
+                <p className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>{result.category}</p>
               </StatCard>
             </div>
 
@@ -333,14 +280,8 @@ export default function ResultContent() {
                   )}
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={priceHistory} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
-                      <XAxis
-                        dataKey="year"
-                        tick={{ fill: "#555", fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(value, index) => index === priceHistory.length - 1 ? "Now" : value}
-                      />
-                      <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
+                      <XAxis dataKey="year" tick={{ fill: "var(--color-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value, index) => index === priceHistory.length - 1 ? "Now" : value} />
+                      <YAxis tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
                       <Tooltip content={<ChartTooltip />} />
                       <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
                     </AreaChart>
@@ -356,7 +297,7 @@ export default function ResultContent() {
               <div>
                 <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Leaderboard</p>
                 <p className="text-lg font-bold mt-0.5">Top {rankPercent}% by Value</p>
-                <p className="text-xs" style={{ color: "#666" }}>Across all {result.category} scans</p>
+                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Across all {result.category} scans</p>
               </div>
             </div>
 

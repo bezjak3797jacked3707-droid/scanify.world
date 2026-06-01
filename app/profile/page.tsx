@@ -28,49 +28,25 @@ export default function ProfilePage() {
   useEffect(() => {
     async function loadProfile() {
       const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push("/");
-        return;
-      }
-
+      if (!session) { router.push("/"); return; }
       setUser(session.user);
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("scans_used, is_pro")
-        .eq("id", session.user.id)
-        .single();
-
+      const { data: profileData } = await supabase.from("profiles").select("scans_used, is_pro").eq("id", session.user.id).single();
       setProfile(profileData);
 
-      const { count } = await supabase
-        .from("scan_results")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", session.user.id);
-
+      const { count } = await supabase.from("scan_results").select("*", { count: "exact", head: true }).eq("user_id", session.user.id);
       setTotalScans(count || 0);
 
-      const { data: scans } = await supabase
-        .from("scan_results")
-        .select("name, current_value, image_url, created_at")
-        .eq("user_id", session.user.id);
-
+      const { data: scans } = await supabase.from("scan_results").select("name, current_value, image_url, created_at").eq("user_id", session.user.id);
       if (scans && scans.length > 0) {
         const sorted = scans
-          .map((s) => ({
-            ...s,
-            numericValue: parseFloat(String(s.current_value).replace(/[^0-9.]/g, "")),
-          }))
+          .map((s) => ({ ...s, numericValue: parseFloat(String(s.current_value).replace(/[^0-9.]/g, "")) }))
           .filter((s) => !isNaN(s.numericValue))
           .sort((a, b) => b.numericValue - a.numericValue);
-
         setBestScans(sorted.slice(0, 3));
       }
-
       setLoading(false);
     }
-
     loadProfile();
   }, []);
 
@@ -80,17 +56,9 @@ export default function ProfilePage() {
   }
 
   async function handleManageSubscription() {
-    const res = await fetch("/api/portal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userEmail: user?.email }),
-    });
-
+    const res = await fetch("/api/portal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userEmail: user?.email }) });
     const data = await res.json();
-
-    if (data.url) {
-      window.location.href = data.url;
-    }
+    if (data.url) window.location.href = data.url;
   }
 
   if (loading) {
@@ -106,16 +74,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen pb-24" style={{ background: "var(--color-black)", color: "#ededed" }}>
+    <main className="min-h-screen pb-24" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <div className="max-w-md mx-auto px-5 py-8 space-y-6">
 
-        {/* Header */}
         <div className="text-center space-y-1">
           <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Account</p>
           <h1 className="text-3xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>Profile</h1>
         </div>
 
-        {/* Profile card */}
         <div className="rounded-2xl p-6 flex flex-col items-center gap-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           {user?.user_metadata?.avatar_url ? (
             <img src={user.user_metadata.avatar_url} alt="Profile" className="w-20 h-20 rounded-full" style={{ border: "2px solid var(--color-gold)" }} />
@@ -127,7 +93,7 @@ export default function ProfilePage() {
 
           <div className="text-center">
             <p className="font-semibold text-lg">{user?.user_metadata?.full_name || "User"}</p>
-            <p className="text-sm" style={{ color: "#666" }}>{user?.email}</p>
+            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>{user?.email}</p>
           </div>
 
           <div className="px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest" style={{
@@ -139,36 +105,28 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-3xl font-bold" style={{ color: "var(--color-gold)" }}>{totalScans}</p>
-            <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "#555" }}>Total Scans</p>
+            <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>Total Scans</p>
           </div>
-
           <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-3xl font-bold" style={{ color: "#00C853" }}>
               {profile?.is_pro ? "200+" : `${Math.max(0, 3 - (profile?.scans_used || 0))}`}
             </p>
-            <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "#555" }}>
+            <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
               {profile?.is_pro ? "Scans / Month" : "Scans Left"}
             </p>
           </div>
         </div>
 
-        {/* Best scans */}
         {bestScans.length > 0 && (
-          <div className="rounded-2xl p-5 space-y-3" style={{
-            background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)",
-            border: "1px solid rgba(201,168,76,0.3)",
-          }}>
+          <div className="rounded-2xl p-5 space-y-3" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)", border: "1px solid rgba(201,168,76,0.3)" }}>
             <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>🏆 Your Top Scans</p>
             {bestScans.map((scan, index) => (
               <div key={index} className="flex gap-3 items-center">
                 <span className="text-lg flex-shrink-0">{index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}</span>
-                {scan.image_url && (
-                  <img src={scan.image_url} alt={scan.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
-                )}
+                {scan.image_url && <img src={scan.image_url} alt={scan.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />}
                 <div>
                   <p className="font-semibold text-sm">{scan.name}</p>
                   <p className="text-base font-bold" style={{ color: "#00C853" }}>
@@ -180,43 +138,23 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Upgrade button if free */}
         {!profile?.is_pro && (
-          <button
-            onClick={() => router.push("/pricing")}
-            className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-80"
-            style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
-          >
+          <button onClick={() => router.push("/pricing")} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-80" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
             Upgrade to Pro
           </button>
         )}
 
-        {/* Manage subscription if pro */}
         {profile?.is_pro && (
-          <button
-            onClick={handleManageSubscription}
-            className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70"
-            style={{ border: "1px solid var(--color-green)", color: "var(--color-green)" }}
-          >
+          <button onClick={handleManageSubscription} className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70" style={{ border: "1px solid var(--color-green)", color: "var(--color-green)" }}>
             Manage Subscription
           </button>
         )}
 
-        {/* View History */}
-        <button
-          onClick={() => router.push("/history")}
-          className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70"
-          style={{ border: "1px solid var(--color-border)", color: "#aaa" }}
-        >
+        <button onClick={() => router.push("/history")} className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}>
           View History
         </button>
 
-        {/* Sign out */}
-        <button
-          onClick={handleSignOut}
-          className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70"
-          style={{ border: "1px solid #333", color: "#666" }}
-        >
+        <button onClick={handleSignOut} className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
           Sign Out
         </button>
 
