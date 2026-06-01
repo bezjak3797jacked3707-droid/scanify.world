@@ -55,7 +55,7 @@ export default function ResellPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const scanLimit = 3;
+  const scanLimit = 1;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
