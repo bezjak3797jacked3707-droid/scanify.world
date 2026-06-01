@@ -52,19 +52,12 @@ function ResellIcon({ active }: { active: boolean }) {
   );
 }
 
-function CrownIcon({ active }: { active: boolean }) {
+function ClockIcon({ active }: { active: boolean }) {
   const c = active ? "#C9A84C" : "#3a3a3a";
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M3 17h18l-2-9-4 4-3-7-3 7-4-4-2 9z"
-        stroke={c}
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill={active ? "rgba(201,168,76,0.15)" : "none"}
-      />
-      <path d="M3 20h18" stroke={c} strokeWidth="1.7" strokeLinecap="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
     </svg>
   );
 }
