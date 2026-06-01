@@ -10,6 +10,16 @@
   --color-border: #1e1e1e;
 }
 
+:root.light {
+  --color-black: #f5f5f0;
+  --color-brown: #f0e6d3;
+  --color-green: #1B4D3E;
+  --color-green-bright: #00C853;
+  --color-gold: #C9A84C;
+  --color-surface: #ffffff;
+  --color-border: #e0e0e0;
+}
+
 @theme inline {
   --color-background: var(--color-black);
   --color-foreground: #ededed;
@@ -20,6 +30,15 @@ body {
   background: var(--color-black);
   color: #ededed;
   font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.light body,
+.light {
+  color: #1a1a1a;
+}
+
+.light .bg-surface {
+  background: #ffffff;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -66,6 +85,7 @@ h1, h2, h3, h4, h5, h6 {
 .chart-flicker .recharts-area-curve {
   animation: chart-line-flicker 2s ease-in-out infinite;
 }
+
 @keyframes pulse-block {
   0%, 100% { opacity: 0.2; transform: scaleY(0.6); }
   50% { opacity: 1; transform: scaleY(1.4); }

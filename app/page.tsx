@@ -4,6 +4,7 @@ import AuthButton from "@/components/AuthButton";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import ThemeToggle from "@/components/ThemeToggle";
 import {
   AreaChart,
   Area,
@@ -106,11 +107,14 @@ export default function Home() {
         }}
       >
         <div className="flex items-center justify-between px-6 pt-8 relative z-10">
-          <span className="text-2xl tracking-widest" style={{ color: "var(--color-gold)", fontFamily: "var(--font-heading)", fontWeight: 500 }}>
-            Scanify
-          </span>
-          <AuthButton />
-        </div>
+  <span className="text-2xl tracking-widest" style={{ color: "var(--color-gold)", fontFamily: "var(--font-heading)", fontWeight: 500 }}>
+    Scanify
+  </span>
+  <div className="flex items-center gap-3">
+    <ThemeToggle />
+    <AuthButton />
+  </div>
+</div>
 
         <div className="absolute inset-x-0 pointer-events-none" style={{ top: "48%", zIndex: 1 }}>
           <svg viewBox="0 0 400 70" preserveAspectRatio="none" className="w-full" style={{ height: 70, filter: "blur(10px)", opacity: 0.45 }}>
