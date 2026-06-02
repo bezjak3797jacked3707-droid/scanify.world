@@ -41,16 +41,6 @@ function checkContentErrors(parsed: any) {
   return null;
 }
 
-// Wraps a promise with a timeout
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)
-    ),
-  ]);
-}
-
 export async function POST(req: NextRequest) {
   try {
     const { imageUrl, userId, note, displayName } = await req.json();
@@ -145,22 +135,21 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   ]
 }`;
 
-    // PRIMARY: Gemini with 8 second timeout
+    // PRIMARY: Gemini 2.0 Flash (faster than 2.5)
     try {
-      console.log("Trying Gemini 2.5 Flash...");
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const geminiPromise = model.generateContent([
+      console.log("Trying Gemini 2.0 Flash...");
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const result = await model.generateContent([
         prompt,
         { inlineData: { mimeType, data: base64Image } },
       ]);
-      const result = await withTimeout(geminiPromise, 8000);
       const parsed = parseJSON(result.response.text().trim());
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName);
       return NextResponse.json(parsed);
     } catch (err: any) {
-      console.error("Gemini failed or timed out:", err?.message);
+      console.error("Gemini 2.0 Flash failed:", err?.message);
     }
 
     // FALLBACK 1: Claude
