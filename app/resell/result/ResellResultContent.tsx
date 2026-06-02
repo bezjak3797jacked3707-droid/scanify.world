@@ -225,7 +225,7 @@ export default function ResellResultContent() {
         )}
 
         <button onClick={() => router.push("/resell")} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-80" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
-          Scan Another Item
+        Resell Another Item
         </button>
 
       </div>

@@ -15,12 +15,13 @@ import {
 } from "recharts";
 
 const demoData = [
-  { year: "2019", price: 160 },
   { year: "2020", price: 185 },
   { year: "2021", price: 240 },
   { year: "2022", price: 210 },
   { year: "2023", price: 265 },
   { year: "2024", price: 310 },
+  { year: "2025", price: 340 },
+  { year: "2026", price: 380 },
 ];
 
 const reviews = [
@@ -57,7 +58,7 @@ function Stars({ count }: { count: number }) {
         <svg key={i} width="11" height="11" viewBox="0 0 24 24">
           <path
             d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            fill={i < count ? "#C9A84C" : "#2a2a2a"}
+            fill={i < count ? "#C9A84C" : "var(--color-border)"}
           />
         </svg>
       ))}
@@ -96,25 +97,22 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen" style={{ background: "var(--color-black)", color: "#ededed" }}>
+    <main className="min-h-screen" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
 
-      {/* SECTION 1 — HERO */}
+      {/* HERO */}
       <section
         className="relative flex flex-col overflow-hidden"
-        style={{
-          minHeight: "88vh",
-          background: "radial-gradient(ellipse 140% 60% at 50% 0%, rgba(27,77,62,0.18) 0%, var(--color-black) 65%)",
-        }}
+        style={{ minHeight: "88vh", background: "radial-gradient(ellipse 140% 60% at 50% 0%, rgba(27,77,62,0.18) 0%, var(--color-black) 65%)" }}
       >
         <div className="flex items-center justify-between px-6 pt-8 relative z-10">
-  <span className="text-2xl tracking-widest" style={{ color: "var(--color-gold)", fontFamily: "var(--font-heading)", fontWeight: 500 }}>
-    Scanify
-  </span>
-  <div className="flex items-center gap-3">
-    <ThemeToggle />
-    <AuthButton />
-  </div>
-</div>
+          <span className="text-2xl tracking-widest" style={{ color: "var(--color-gold)", fontFamily: "var(--font-heading)", fontWeight: 500 }}>
+            Scanify
+          </span>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <AuthButton />
+          </div>
+        </div>
 
         <div className="absolute inset-x-0 pointer-events-none" style={{ top: "48%", zIndex: 1 }}>
           <svg viewBox="0 0 400 70" preserveAspectRatio="none" className="w-full" style={{ height: 70, filter: "blur(10px)", opacity: 0.45 }}>
@@ -138,62 +136,54 @@ export default function Home() {
           </div>
 
           <div className="text-center space-y-1.5">
-            <h1 className="text-4xl leading-tight" style={{ fontFamily: "var(--font-heading)", fontWeight: 500, color: "#ededed" }}>
+            <h1 className="text-4xl leading-tight" style={{ fontFamily: "var(--font-heading)", fontWeight: 500, color: "var(--color-text-primary)" }}>
               Scan Anything.
               <br />
               <span style={{ color: "var(--color-gold)" }}>Know Its Value.</span>
             </h1>
-            <p className="text-sm" style={{ color: "#666" }}>
+            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
               AI-powered appraisals in seconds.
             </p>
           </div>
 
           <div className="flex flex-col items-center gap-3 w-full">
-            <Link
-              href="/scan"
-              className="w-full text-center py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-85"
-              style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
-            >
+            <Link href="/scan" className="w-full text-center py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-85" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
               {user ? "Scan Now" : "Try Free Scan"}
             </Link>
-            <Link
-              href="/pricing"
-              className="w-full text-center py-3 rounded-2xl text-sm tracking-wider uppercase font-medium transition-opacity hover:opacity-70"
-              style={{ border: "1px solid rgba(201,168,76,0.35)", color: "var(--color-gold)" }}
-            >
+            <Link href="/pricing" className="w-full text-center py-3 rounded-2xl text-sm tracking-wider uppercase font-medium transition-opacity hover:opacity-70" style={{ border: "1px solid rgba(201,168,76,0.35)", color: "var(--color-gold)" }}>
               {user ? "View Pricing" : "See Plans"}
             </Link>
           </div>
         </div>
       </section>
 
-      {/* SECTION 3 — REVIEWS */}
+      {/* REVIEWS */}
       <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
         <h2 className="text-2xl text-center mb-6" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
           What People Say
         </h2>
         <div className="grid grid-cols-2 gap-3">
           {reviews.map((r) => (
-            <div key={r.name} className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: "var(--color-surface)", border: "1px solid var(--color-brown)" }}>
+            <div key={r.name} className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: "#2C1A0E", color: "var(--color-gold)", fontSize: 10 }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: "var(--color-brown)", color: "var(--color-gold)", fontSize: 10 }}>
                   {r.initials}
                 </div>
-                <span className="text-xs font-semibold" style={{ color: "#ddd" }}>{r.name}</span>
+                <span className="text-xs font-semibold" style={{ color: "var(--color-text-primary)" }}>{r.name}</span>
               </div>
               <Stars count={r.stars} />
-              <p className="text-xs leading-relaxed" style={{ color: "#777" }}>{r.comment}</p>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>{r.comment}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* SECTION 4 — HOW IT WORKS */}
+      {/* HOW IT WORKS */}
       <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
         <h2 className="text-2xl text-center mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
           How It Works
         </h2>
-        <p className="text-sm text-center mb-8" style={{ color: "#555" }}>
+        <p className="text-sm text-center mb-8" style={{ color: "var(--color-text-muted)" }}>
           Snap a photo. Our AI returns value, history, and specs instantly.
         </p>
 
@@ -208,8 +198,8 @@ export default function Home() {
                 {s.n}
               </span>
               <div>
-                <p className="font-semibold text-sm mb-0.5">{s.title}</p>
-                <p className="text-xs leading-relaxed" style={{ color: "#666" }}>{s.body}</p>
+                <p className="font-semibold text-sm mb-0.5" style={{ color: "var(--color-text-primary)" }}>{s.title}</p>
+                <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>{s.body}</p>
               </div>
             </div>
           ))}
@@ -217,13 +207,13 @@ export default function Home() {
 
         <div className="rounded-2xl p-4 pt-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: "var(--color-gold)" }}>Example · Nike Air Jordan 1</p>
-          <p className="text-xs mb-4" style={{ color: "#444" }}>Estimated resale value 2019–2024</p>
+          <p className="text-xs mb-4" style={{ color: "var(--color-text-faint)" }}>Estimated resale value 2020–2026</p>
           <div style={{ height: 148 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={demoData} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
-                <XAxis dataKey="year" tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 10, fontSize: 12 }} labelStyle={{ color: "#C9A84C", fontSize: 11 }} itemStyle={{ color: "#ededed" }} />
+                <XAxis dataKey="year" tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <Tooltip contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12 }} labelStyle={{ color: "var(--color-gold)", fontSize: 11 }} itemStyle={{ color: "var(--color-text-primary)" }} />
                 <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1800} />
               </AreaChart>
             </ResponsiveContainer>
@@ -231,19 +221,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SECTION 5 — CONTACT */}
+      {/* CONTACT */}
       <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
         <h2 className="text-2xl text-center mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
           Get in Touch
         </h2>
-        <p className="text-sm text-center mb-8" style={{ color: "#555" }}>
+        <p className="text-sm text-center mb-8" style={{ color: "var(--color-text-muted)" }}>
           Questions, feedback, or partnerships — we&apos;d love to hear from you.
         </p>
 
         {submitted ? (
           <div className="rounded-2xl p-6 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-green)" }}>
             <p className="text-sm font-medium" style={{ color: "#00C853" }}>Message sent.</p>
-            <p className="text-xs mt-1" style={{ color: "#666" }}>We&apos;ll get back to you soon.</p>
+            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>We&apos;ll get back to you soon.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -253,8 +243,8 @@ export default function Home() {
               placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none placeholder:text-zinc-700"
-              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "#ededed", fontFamily: "var(--font-body)" }}
+              className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
             />
             <textarea
               required
@@ -262,31 +252,27 @@ export default function Home() {
               placeholder="Your message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none placeholder:text-zinc-700"
-              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "#ededed", fontFamily: "var(--font-body)" }}
+              className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
             />
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl font-semibold text-sm tracking-wider uppercase transition-opacity hover:opacity-85"
-              style={{ background: "var(--color-gold)", color: "#0a0a0a" }}
-            >
+            <button type="submit" className="w-full py-3 rounded-xl font-semibold text-sm tracking-wider uppercase transition-opacity hover:opacity-85" style={{ background: "var(--color-gold)", color: "#0a0a0a" }}>
               Send Message
             </button>
           </form>
         )}
       </section>
 
-      {/* SECTION 6 — FOOTER */}
+      {/* FOOTER */}
       <footer className="px-5 py-10 flex flex-col items-center gap-5" style={{ borderTop: "1px solid var(--color-border)" }}>
         <span style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontSize: 22, fontWeight: 500, letterSpacing: "0.15em" }}>
           Scanify
         </span>
         <div className="flex gap-6 text-xs">
-          <a href="#" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: "#666" }}>Instagram</a>
-          <a href="/terms" className="transition-opacity hover:opacity-70" style={{ color: "#666" }}>Terms of Service</a>
-          <a href="/privacy" className="transition-opacity hover:opacity-70" style={{ color: "#666" }}>Privacy Policy</a>
+          <a href="#" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Instagram</a>
+          <a href="/terms" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Terms of Service</a>
+          <a href="/privacy" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Privacy Policy</a>
         </div>
-        <p className="text-xs" style={{ color: "#3a3a3a" }}>© {new Date().getFullYear()} Scanify. All rights reserved.</p>
+        <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>© {new Date().getFullYear()} Scanify. All rights reserved.</p>
       </footer>
 
     </main>

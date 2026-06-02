@@ -53,13 +53,19 @@ export default function HistoryPage() {
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortMode>("recent");
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   useEffect(() => {
     async function fetchScans() {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setScans([]); setLoading(false); return; }
+      if (!session) {
+        setIsLoggedIn(false);
+        setScans([]);
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("scan_results")
@@ -107,16 +113,7 @@ export default function HistoryPage() {
             {(["recent", "expensive"] as SortMode[]).map((mode) => {
               const active = sort === mode;
               return (
-                <button
-                  key={mode}
-                  onClick={() => setSort(mode)}
-                  className="px-3 py-2 text-[10px] uppercase tracking-widest transition-all"
-                  style={{
-                    background: active ? "var(--color-green)" : "transparent",
-                    color: active ? "var(--color-gold)" : "var(--color-text-muted)",
-                    fontWeight: active ? 600 : 400,
-                  }}
-                >
+                <button key={mode} onClick={() => setSort(mode)} className="px-3 py-2 text-[10px] uppercase tracking-widest transition-all" style={{ background: active ? "var(--color-green)" : "transparent", color: active ? "var(--color-gold)" : "var(--color-text-muted)", fontWeight: active ? 600 : 400 }}>
                   {mode === "recent" ? "Recent" : "Expensive"}
                 </button>
               );
@@ -125,10 +122,17 @@ export default function HistoryPage() {
         </div>
 
         <p className="text-xs mb-6" style={{ color: "var(--color-text-faint)" }}>
-          {sorted.length} scan{sorted.length !== 1 ? "s" : ""} this month
+          {isLoggedIn ? `${sorted.length} scan${sorted.length !== 1 ? "s" : ""} this month` : ""}
         </p>
 
-        {sorted.length === 0 ? (
+        {!isLoggedIn ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+            <p className="text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>Sign in to view your history</p>
+            <button onClick={() => router.push("/")} className="px-6 py-3 rounded-2xl text-sm font-semibold tracking-widest uppercase" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
+              Sign In
+            </button>
+          </div>
+        ) : sorted.length === 0 ? (
           <EmptyState onScan={() => router.push("/scan")} />
         ) : (
           <div className="flex flex-col gap-3">
@@ -164,11 +168,9 @@ export default function HistoryPage() {
                       {daysAgo(scan.created_at)}
                     </span>
                   </div>
-
                   <p className="text-lg font-bold leading-none mb-1" style={{ color: "#00C853" }}>
                     ${Number(String(scan.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
                   </p>
-
                   <p className="text-[11px]" style={{ color: "var(--color-text-faint)" }}>
                     {scan.scan_type === "resell" ? "🏷️ Resell Scan" : scan.category}
                   </p>
