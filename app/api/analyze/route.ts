@@ -105,12 +105,6 @@ STRICT RULES:
 3. If the image is blurry, too dark, or you cannot identify any object - respond with exactly: {"error": "image_unclear"}
 4. Only analyze portable physical objects that can be bought and sold.
 
-RESPONSE LENGTH RULES - MUST FOLLOW:
-"description": "MAXIMUM 2 sentences. Very concise. One sentence on what it is, one sentence on what makes it special.",
-"materials": "EXACTLY 3 materials. VERY SHORT. Format: Material - use. Maximum 8 words per line. Example: Carbon fiber - lightweight body panels.",
-- specs: exactly 4 items, one line each
-- Violating these length rules is not acceptable¨
-
 IDENTIFICATION RULES:
 - Look extremely carefully at ALL visible details: logos, badges, model numbers, color, shape, design elements, stitching, hardware, labels
 - For cars: identify the exact make, model, year, trim level and any special edition (e.g. "2019 Lamborghini Huracán Performante" not just "Lamborghini")
@@ -145,9 +139,9 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   "originalPrice": "original retail price in USD as a number only no dollar sign",
   "category": "specific product category",
   "confidence": "your confidence percentage as a number only",
-  "description": "Write 4-5 sentences covering what makes this item special, its history and market context. Be specific but concise.",
-"materials": "List exactly 3 key materials. One line each. Format: Material — brief reason why used.",
-"specs": "List exactly 4 key specs with exact numbers. One line each. Format: Spec: value.",
+  "description": "Write exactly 3 sentences. Cover what makes this item special and its market context. Be specific but concise.",
+  "materials": "List exactly 3 key materials. One line each. Format: Material — brief reason why used.",
+  "specs": "List exactly 4 key specs with exact numbers. One line each. Format: Spec: value.",
   "priceHistory": [
     {"year": "2020", "price": 0},
     {"year": "2021", "price": 0},
@@ -181,7 +175,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
       console.log("Trying Claude 3.5 Sonnet...");
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-5",
-        max_tokens: 1200,
+        max_tokens: 2500,
         messages: [
           {
             role: "user",
@@ -229,7 +223,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
             ],
           },
         ],
-        max_tokens: 1200,
+        max_tokens: 2500,
       });
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
