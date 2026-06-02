@@ -115,7 +115,44 @@ export default function ResultContent() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [chartDrawn, setChartDrawn] = useState(false);
   const [isLoadingFromHistory, setIsLoadingFromHistory] = useState(false);
-
+  const LOADING_MESSAGES = [
+    "Scanning item…",
+    "Identifying model…",
+    "Checking market prices…",
+    "Calculating value…",
+    "Analyzing materials…",
+    "Reviewing specs…",
+    "Checking price history…",
+    "Almost there…",
+  ];
+  
+  function LoadingMessage() {
+    const [index, setIndex] = useState(0);
+    const [visible, setVisible] = useState(true);
+  
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setVisible(false);
+        setTimeout(() => {
+          setIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+          setVisible(true);
+        }, 300);
+      }, 2000);
+      return () => clearInterval(interval);
+    }, []);
+  
+    return (
+      <p
+        className="text-sm uppercase tracking-widest transition-opacity duration-300"
+        style={{
+          color: "var(--color-gold)",
+          opacity: visible ? 1 : 0,
+        }}
+      >
+        {LOADING_MESSAGES[index]}
+      </p>
+    );
+  }
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const imageUrlParam = params.get("imageUrl");
@@ -201,9 +238,11 @@ export default function ResultContent() {
             <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
           ))}
         </div>
-        <p className="text-sm uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>
-          {isLoadingFromHistory ? "Loading scan…" : "Analyzing your item…"}
-        </p>
+        {isLoadingFromHistory ? (
+          <p className="text-sm uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Loading scan…</p>
+        ) : (
+          <LoadingMessage />
+        )}
       </main>
     );
   }
