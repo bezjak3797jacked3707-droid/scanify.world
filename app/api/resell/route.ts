@@ -15,6 +15,36 @@ function parseJSON(text: string) {
   return JSON.parse(clean);
 }
 
+async function saveResellResult(parsed: any, imageUrl: string, userId: string) {
+  await supabase.from("scan_results").insert({
+    image_url: imageUrl,
+    name: parsed.name,
+    current_value: parsed.bestPrice,
+    original_price: parsed.originalPrice,
+    category: parsed.category,
+    confidence: "100",
+    description: parsed.sellingTips,
+    materials: "",
+    specs: "",
+    user_id: userId,
+    full_result: parsed,
+    display_name: "Anonymous",
+    on_leaderboard: false,
+    scan_type: "resell",
+  });
+
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("resell_scans_used")
+    .eq("id", userId)
+    .single();
+
+  await supabase
+    .from("profiles")
+    .update({ resell_scans_used: (current?.resell_scans_used || 0) + 1 })
+    .eq("id", userId);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { imageUrl, userId, preferredPlatform } = await req.json();
@@ -23,11 +53,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No image URL provided" }, { status: 400 });
     }
 
-    // Check scan limits
+    // Check resell scan limits
     if (userId) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("scans_used, is_pro, scans_reset_at")
+        .select("resell_scans_used, is_pro, scans_reset_at")
         .eq("id", userId)
         .single();
 
@@ -39,12 +69,12 @@ export async function POST(req: NextRequest) {
         if (isNewMonth) {
           await supabase
             .from("profiles")
-            .update({ scans_used: 0, scans_reset_at: now.toISOString() })
+            .update({ resell_scans_used: 0, scans_reset_at: now.toISOString() })
             .eq("id", userId);
-          profile.scans_used = 0;
+          profile.resell_scans_used = 0;
         }
 
-        if (profile.scans_used >= 1) {
+        if ((profile.resell_scans_used || 0) >= 1) {
           return NextResponse.json({ error: "scan_limit_reached" }, { status: 403 });
         }
       }
@@ -131,25 +161,7 @@ Analyze the item and return ONLY a JSON object with no extra text, no markdown, 
       ]);
       const parsed = parseJSON(result.response.text().trim());
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) {
-        await supabase.from("scan_results").insert({
-          image_url: imageUrl,
-          name: parsed.name,
-          current_value: parsed.bestPrice,
-          original_price: parsed.originalPrice,
-          category: parsed.category,
-          confidence: "100",
-          description: parsed.sellingTips,
-          materials: "",
-          specs: "",
-          user_id: userId,
-          full_result: parsed,
-          display_name: "Anonymous",
-          on_leaderboard: false,
-          scan_type: "resell",
-        });
-        await supabase.rpc("increment_scans", { user_id_input: userId });
-      }
+      if (userId) await saveResellResult(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell Gemini failed:", err?.message);
@@ -164,10 +176,7 @@ Analyze the item and return ONLY a JSON object with no extra text, no markdown, 
         messages: [{
           role: "user",
           content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp", data: base64Image },
-            },
+            { type: "image", source: { type: "base64", media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp", data: base64Image } },
             { type: "text", text: prompt },
           ],
         }],
@@ -175,25 +184,7 @@ Analyze the item and return ONLY a JSON object with no extra text, no markdown, 
       const text = response.content[0].type === "text" ? response.content[0].text : "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) {
-        await supabase.from("scan_results").insert({
-          image_url: imageUrl,
-          name: parsed.name,
-          current_value: parsed.bestPrice,
-          original_price: parsed.originalPrice,
-          category: parsed.category,
-          confidence: "100",
-          description: parsed.sellingTips,
-          materials: "",
-          specs: "",
-          user_id: userId,
-          full_result: parsed,
-          display_name: "Anonymous",
-          on_leaderboard: false,
-          scan_type: "resell",
-        });
-        await supabase.rpc("increment_scans", { user_id_input: userId });
-      }
+      if (userId) await saveResellResult(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell Claude failed:", err?.message);
@@ -216,25 +207,7 @@ Analyze the item and return ONLY a JSON object with no extra text, no markdown, 
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) {
-        await supabase.from("scan_results").insert({
-          image_url: imageUrl,
-          name: parsed.name,
-          current_value: parsed.bestPrice,
-          original_price: parsed.originalPrice,
-          category: parsed.category,
-          confidence: "100",
-          description: parsed.sellingTips,
-          materials: "",
-          specs: "",
-          user_id: userId,
-          full_result: parsed,
-          display_name: "Anonymous",
-          on_leaderboard: false,
-          scan_type: "resell",
-        });
-        await supabase.rpc("increment_scans", { user_id_input: userId });
-      }
+      if (userId) await saveResellResult(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell OpenAI failed:", err?.message);

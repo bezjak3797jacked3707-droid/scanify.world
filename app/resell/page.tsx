@@ -178,7 +178,7 @@ export default function ResellPage() {
 
         {limitReached && (
           <div className="rounded-2xl p-4 text-center space-y-3" style={{ background: "var(--color-surface)", border: "1px solid #7c3aed" }}>
-            <p className="text-sm font-semibold" style={{ color: "var(--color-gold)" }}>You've used your {scanLimit} free scan</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--color-gold)" }}>You've used your free scan</p>
             <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Upgrade to Pro for 200 scans per month</p>
             <button onClick={() => router.push("/pricing")} className="w-full py-2 rounded-xl text-sm font-semibold tracking-wider uppercase" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
               Upgrade to Pro
