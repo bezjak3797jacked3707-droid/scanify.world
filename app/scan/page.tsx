@@ -12,7 +12,7 @@ async function compressImage(file: File): Promise<File> {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
-      const maxSize = 1024;
+      const maxSize = 800;
       let width = img.width;
       let height = img.height;
       if (width > height && width > maxSize) { height = (height * maxSize) / width; width = maxSize; }
@@ -23,7 +23,7 @@ async function compressImage(file: File): Promise<File> {
       canvas.toBlob((blob) => {
         resolve(new File([blob!], "scan.jpg", { type: "image/jpeg" }));
         URL.revokeObjectURL(url);
-      }, "image/jpeg", 0.8);
+      }, "image/jpeg", 0.75);
     };
     img.src = url;
   });
@@ -37,6 +37,8 @@ export default function ScanPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [isPreUploading, setIsPreUploading] = useState(false);
   const [error, setError] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [scansUsed, setScansUsed] = useState(0);
@@ -61,29 +63,64 @@ export default function ScanPage() {
     fileInputRef.current?.click();
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
     if (!selected) return;
+
+    // Reset previous upload
+    setUploadedUrl(null);
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
     setError("");
     e.target.value = "";
+
+    // Pre-upload in background immediately
+    setIsPreUploading(true);
+    try {
+      const compressed = await compressImage(selected);
+      const fileName = `${Date.now()}.jpg`;
+      const filePath = `uploads/${fileName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("scans")
+        .upload(filePath, compressed, { cacheControl: "3600", upsert: false });
+
+      if (!uploadError) {
+        const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
+        setUploadedUrl(data.publicUrl);
+      }
+    } catch (err) {
+      // Silent fail — handleScan will retry
+    } finally {
+      setIsPreUploading(false);
+    }
   }
 
   async function handleScan() {
     if (!file) return;
     setIsUploading(true);
     setError("");
+
     try {
-      const compressed = await compressImage(file);
-      const fileName = `${Date.now()}.jpg`;
-      const filePath = `uploads/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from("scans").upload(filePath, compressed, { cacheControl: "3600", upsert: false });
-      if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
-      router.push(`/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&displayName=${encodeURIComponent(user?.user_metadata?.full_name ?? "Anonymous")}`);
+      let publicUrl = uploadedUrl;
+
+      // If pre-upload didn't finish, upload now
+      if (!publicUrl) {
+        const compressed = await compressImage(file);
+        const fileName = `${Date.now()}.jpg`;
+        const filePath = `uploads/${fileName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("scans")
+          .upload(filePath, compressed, { cacheControl: "3600", upsert: false });
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
+        publicUrl = data.publicUrl;
+      }
+
+      router.push(
+        `/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&displayName=${encodeURIComponent(user?.user_metadata?.full_name ?? "Anonymous")}`
+      );
     } catch (err) {
-      setError("Upload failed. Check bucket setup and try again.");
+      setError("Upload failed. Please try again.");
       setIsUploading(false);
     }
   }
@@ -148,9 +185,17 @@ export default function ScanPage() {
             <img src={preview} alt="Selected item" className="w-full h-full object-cover" />
           </div>
 
-          <button onClick={openPicker} type="button" className="text-xs uppercase tracking-widest self-end transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
-            Retake photo
-          </button>
+          <div className="flex items-center justify-between">
+            <button onClick={openPicker} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
+              Retake photo
+            </button>
+            {isPreUploading && (
+              <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>Preparing…</p>
+            )}
+            {uploadedUrl && !isPreUploading && (
+              <p className="text-xs" style={{ color: "#00C853" }}>✓ Ready</p>
+            )}
+          </div>
 
           <textarea
             value={note}
@@ -161,7 +206,13 @@ export default function ScanPage() {
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
           />
 
-          <button onClick={handleScan} disabled={isUploading} type="button" className="w-full rounded-2xl py-4 text-base font-semibold tracking-wider uppercase transition-opacity disabled:opacity-50" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
+          <button
+            onClick={handleScan}
+            disabled={isUploading}
+            type="button"
+            className="w-full rounded-2xl py-4 text-base font-semibold tracking-wider uppercase transition-opacity disabled:opacity-50"
+            style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+          >
             {isUploading ? "Preparing scan…" : "Scan"}
           </button>
 
