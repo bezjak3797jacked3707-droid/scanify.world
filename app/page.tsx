@@ -71,6 +71,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isLight, setIsLight] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -82,6 +83,14 @@ export default function Home() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsLight(document.documentElement.classList.contains("light"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -132,7 +141,16 @@ export default function Home() {
 
         <div className="flex flex-col items-center justify-center flex-1 px-6 gap-8 relative z-10 pb-10">
           <div className="w-64 h-64 rounded-3xl overflow-hidden">
-            <img src="/logo.png" alt="Scanify logo" className="w-full h-full object-contain" style={{ mixBlendMode: "screen" }} />
+            <img
+              src="/logo.png"
+              alt="Scanify logo"
+              className="w-full h-full object-contain"
+              style={{
+                mixBlendMode: isLight ? "normal" : "screen",
+                filter: isLight ? "invert(1) sepia(1) saturate(3) hue-rotate(115deg) brightness(0.25)" : "none",
+                transition: "filter 0.3s ease",
+              }}
+            />
           </div>
 
           <div className="text-center space-y-1.5">
