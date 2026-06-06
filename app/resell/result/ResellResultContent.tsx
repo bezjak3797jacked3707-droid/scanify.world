@@ -35,7 +35,44 @@ function StatCard({ label, children }: { label: string; children: React.ReactNod
     </div>
   );
 }
-
+const RESELL_LOADING_MESSAGES = [
+    "Scanning resell markets…",
+    "Identifying item…",
+    "Checking eBay sold listings…",
+    "Comparing platform prices…",
+    "Analyzing market demand…",
+    "Calculating best price…",
+    "Reviewing price history…",
+    "Almost there…",
+  ];
+  
+  function ResellLoadingMessage() {
+    const [index, setIndex] = useState(0);
+    const [visible, setVisible] = useState(true);
+  
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setVisible(false);
+        setTimeout(() => {
+          setIndex((prev) => (prev + 1) % RESELL_LOADING_MESSAGES.length);
+          setVisible(true);
+        }, 300);
+      }, 2000);
+      return () => clearInterval(interval);
+    }, []);
+  
+    return (
+      <p
+        className="text-sm uppercase tracking-widest transition-opacity duration-300"
+        style={{
+          color: "var(--color-gold)",
+          opacity: visible ? 1 : 0,
+        }}
+      >
+        {RESELL_LOADING_MESSAGES[index]}
+      </p>
+    );
+  }
 export default function ResellResultContent() {
   const router = useRouter();
   const [result, setResult] = useState<any>(null);
@@ -104,7 +141,7 @@ export default function ResellResultContent() {
             <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
           ))}
         </div>
-        <p className="text-sm uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Scanning resell markets…</p>
+        <ResellLoadingMessage />
       </main>
     );
   }
