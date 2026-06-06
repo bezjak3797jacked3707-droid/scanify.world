@@ -147,7 +147,7 @@ export default function Home() {
               className="w-full h-full object-contain"
               style={{
                 mixBlendMode: isLight ? "normal" : "screen",
-                filter: isLight ? "invert(1) sepia(1) saturate(3) hue-rotate(115deg) brightness(0.25)" : "none",
+                filter: isLight ? "none" : "none",
                 transition: "filter 0.3s ease",
               }}
             />
