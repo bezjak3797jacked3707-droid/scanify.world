@@ -3,9 +3,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { vibrate } from "@/lib/haptics";
-import { generateShareCard, shareCard } from "@/lib/shareCard";
-import SwipeCards from "@/components/SwipeCards";
 import {
   AreaChart,
   Area,
@@ -102,6 +99,39 @@ function InfoCard({ label, content }: { label: string; content: string }) {
   );
 }
 
+const LOADING_MESSAGES = [
+  "Scanning item…",
+  "Identifying model…",
+  "Checking market prices…",
+  "Calculating value…",
+  "Analyzing materials…",
+  "Reviewing specs…",
+  "Checking price history…",
+  "Almost there…",
+];
+
+function LoadingMessage() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+        setVisible(true);
+      }, 300);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <p className="text-sm uppercase tracking-widest transition-opacity duration-300" style={{ color: "var(--color-gold)", opacity: visible ? 1 : 0 }}>
+      {LOADING_MESSAGES[index]}
+    </p>
+  );
+}
+
 function handleContentError(errorCode: string, setError: (msg: string) => void, setLoading: (val: boolean) => void) {
   if (errorCode === "inappropriate_content") { setError("This item cannot be scanned. Scanify does not support inappropriate content."); setLoading(false); return true; }
   if (errorCode === "buildings_not_supported") { setError("Buildings and structures cannot be scanned. Scanify is for physical objects only."); setLoading(false); return true; }
@@ -119,44 +149,7 @@ export default function ResultContent() {
   const [chartDrawn, setChartDrawn] = useState(false);
   const [isLoadingFromHistory, setIsLoadingFromHistory] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const LOADING_MESSAGES = [
-    "Scanning item…",
-    "Identifying model…",
-    "Checking market prices…",
-    "Calculating value…",
-    "Analyzing materials…",
-    "Reviewing specs…",
-    "Checking price history…",
-    "Almost there…",
-  ];
-  
-  function LoadingMessage() {
-    const [index, setIndex] = useState(0);
-    const [visible, setVisible] = useState(true);
-  
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setVisible(false);
-        setTimeout(() => {
-          setIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-          setVisible(true);
-        }, 300);
-      }, 2000);
-      return () => clearInterval(interval);
-    }, []);
-  
-    return (
-      <p
-        className="text-sm uppercase tracking-widest transition-opacity duration-300"
-        style={{
-          color: "var(--color-gold)",
-          opacity: visible ? 1 : 0,
-        }}
-      >
-        {LOADING_MESSAGES[index]}
-      </p>
-    );
-  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const imageUrlParam = params.get("imageUrl");
@@ -180,7 +173,6 @@ export default function ResultContent() {
             if (!res.ok) throw new Error("Analysis failed");
             setResult(scanData);
             setImageUrlState(data.image_url);
-            vibrate([0, 30, 40, 30]);
             setTimeout(() => setShowConfetti(true), 200);
             setTimeout(() => setShowConfetti(false), 1200);
             setTimeout(() => setChartDrawn(true), 1700);
@@ -237,15 +229,20 @@ export default function ResultContent() {
 
   async function handleShare() {
     if (!result || !imageUrlState) return;
-    vibrate();
     setIsSharing(true);
     try {
-      const blob = await generateShareCard({
-        imageUrl: imageUrlState,
-        name: result.name,
-        value: result.currentValue,
-      });
-      if (blob) await shareCard(blob, "scanify-result.jpg", `${result.name} — Scanify`);
+      if (navigator.share) {
+        await navigator.share({
+          title: `${result.name} — Scanify`,
+          text: `I just scanned a ${result.name} worth $${Number(String(result.currentValue).replace(/[^0-9.]/g, "")).toLocaleString()} on Scanify!`,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        alert("Link copied to clipboard!");
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
     } finally {
       setIsSharing(false);
     }
@@ -329,66 +326,55 @@ export default function ResultContent() {
               </StatCard>
             </div>
 
-            {confidenceNum < 50 && (
-              <button
-                onClick={() => { vibrate(); router.push("/scan"); }}
-                className="w-full py-3 rounded-2xl font-semibold text-sm tracking-wider uppercase transition-opacity hover:opacity-80"
-                style={{ background: "var(--color-surface)", border: "1px solid #EF4444", color: "#EF4444" }}
-              >
-                Not quite right? Rescan
-              </button>
-            )}
-
+            {/* Share button */}
             <button
               onClick={handleShare}
               disabled={isSharing}
               className="w-full py-3 rounded-2xl font-semibold text-sm tracking-wider uppercase transition-opacity hover:opacity-80 disabled:opacity-50"
               style={{ background: "var(--color-surface)", border: "1px solid var(--color-gold)", color: "var(--color-gold)" }}
             >
-              {isSharing ? "Preparing…" : "Share Result"}
+              {isSharing ? "Sharing…" : "⬆ Share Result"}
             </button>
 
-            <SwipeCards>
-              {[
-                priceHistory.length > 0 && (
-                  <div key="history" className="rounded-2xl p-4 pt-5 h-full" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-                    <h3 className="text-xs uppercase tracking-widest mb-4" style={{ color: "var(--color-gold)" }}>Price History</h3>
-                    <div className={`relative ${chartDrawn ? "chart-flicker" : ""}`} style={{ height: 168 }}>
-                      {!chartDrawn && (
-                        <div className="absolute pointer-events-none" style={{ top: 0, bottom: 28, left: 36, right: 10, zIndex: 5 }}>
-                          <div style={{ position: "absolute", top: "50%", width: 18, height: 18, borderRadius: "50%", background: "radial-gradient(circle, #7c3aed 30%, transparent 80%)", boxShadow: "0 0 18px 10px rgba(124,58,237,0.75)", transform: "translate(-50%, -50%)", animation: "leading-edge-move 1.5s linear forwards" }} />
-                        </div>
-                      )}
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={priceHistory} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
-                          <XAxis dataKey="year" tick={{ fill: "var(--color-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value, index) => index === priceHistory.length - 1 ? "Now" : value} />
-                          <YAxis tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
-                        </AreaChart>
-                      </ResponsiveContainer>
+            {priceHistory.length > 0 && (
+              <div className="rounded-2xl p-4 pt-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <h3 className="text-xs uppercase tracking-widest mb-4" style={{ color: "var(--color-gold)" }}>Price History</h3>
+                <div className={`relative ${chartDrawn ? "chart-flicker" : ""}`} style={{ height: 168 }}>
+                  {!chartDrawn && (
+                    <div className="absolute pointer-events-none" style={{ top: 0, bottom: 28, left: 36, right: 10, zIndex: 5 }}>
+                      <div style={{ position: "absolute", top: "50%", width: 18, height: 18, borderRadius: "50%", background: "radial-gradient(circle, #7c3aed 30%, transparent 80%)", boxShadow: "0 0 18px 10px rgba(124,58,237,0.75)", transform: "translate(-50%, -50%)", animation: "leading-edge-move 1.5s linear forwards" }} />
                     </div>
-                  </div>
-                ),
-                <div key="leaderboard" className="rounded-2xl p-5 flex items-center gap-4 h-full" style={{ background: "linear-gradient(135deg, rgba(27,77,62,0.6) 0%, var(--color-surface) 70%)", border: "1px solid var(--color-green)" }}>
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.4)" }}>
-                    <TrophyIcon />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Leaderboard</p>
-                    <p className="text-lg font-bold mt-0.5">Top {rankPercent}% by Value</p>
-                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Across all {result.category} scans</p>
-                  </div>
-                </div>,
-                <InfoCard key="details" label="Details" content={result.description} />,
-                <InfoCard key="materials" label="Materials" content={result.materials} />,
-                <InfoCard key="specs" label="Specs" content={result.specs} />,
-              ].filter(Boolean) as React.ReactNode[]}
-            </SwipeCards>
+                  )}
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={priceHistory} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
+                      <XAxis dataKey="year" tick={{ fill: "var(--color-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value, index) => index === priceHistory.length - 1 ? "Now" : value} />
+                      <YAxis tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(27,77,62,0.6) 0%, var(--color-surface) 70%)", border: "1px solid var(--color-green)" }}>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.4)" }}>
+                <TrophyIcon />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Leaderboard</p>
+                <p className="text-lg font-bold mt-0.5">Top {rankPercent}% by Value</p>
+                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Across all {result.category} scans</p>
+              </div>
+            </div>
+
+            <InfoCard label="Details" content={result.description} />
+            <InfoCard label="Materials" content={result.materials} />
+            <InfoCard label="Specs" content={result.specs} />
           </>
         )}
 
-        <button onClick={() => { vibrate(); router.push("/scan"); }} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-80" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
+        <button onClick={() => router.push("/scan")} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-80" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
           Scan Another Item
         </button>
 
