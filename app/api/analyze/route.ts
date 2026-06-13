@@ -155,97 +155,75 @@ Respond with only a valid JSON object — no explanation, no markdown, no backti
   ]
 }`;
 
-    // PRIMARY: Claude Sonnet 4.6 (best accuracy + good speed)
-    try {
-      console.log("Trying Claude Sonnet 4.6...");
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1200,
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                data: base64Image,
-              },
-            },
-            { type: "text", text: prompt },
-          ],
-        }],
-      });
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const parsed = parseJSON(text);
-      const contentError = checkContentErrors(parsed);
-      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
-      return NextResponse.json(parsed);
-    } catch (err: any) {
-      console.error("Claude Sonnet failed:", err?.message);
-    }
+// PRIMARY: Claude Sonnet 4.6
+try {
+  console.log("Trying Claude Sonnet 4.6...");
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
+    system: prompt,
+    messages: [{
+      role: "user",
+      content: [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+            data: base64Image,
+          },
+        },
+        {
+          type: "text",
+          text: noteHint || "Analyze this item and return the JSON.",
+        },
+      ],
+    }],
+  });
+  const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const parsed = parseJSON(text);
+  const contentError = checkContentErrors(parsed);
+  if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+  await saveResult(parsed, imageUrl, userId, displayName);
+  return NextResponse.json(parsed);
+} catch (err: any) {
+  console.error("Claude Sonnet failed:", err?.message);
+}
 
-    // FALLBACK 1: Claude Haiku 4.5
-    try {
-      console.log("Trying Claude Haiku 4.5...");
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 1200,
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                data: base64Image,
-              },
-            },
-            { type: "text", text: prompt },
-          ],
-        }],
-      });
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const parsed = parseJSON(text);
-      const contentError = checkContentErrors(parsed);
-      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
-      return NextResponse.json(parsed);
-    } catch (err: any) {
-      console.error("Claude Haiku failed:", err?.message);
-    }
-
-    // FALLBACK 2: OpenAI GPT-4o (last resort)
-    try {
-      console.log("Trying OpenAI GPT-4o...");
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`,
-                detail: "high",
-              },
-            },
-          ],
-        }],
-        max_tokens: 2000,
-      });
-      const text = response.choices[0].message.content?.trim() || "";
-      const parsed = parseJSON(text);
-      const contentError = checkContentErrors(parsed);
-      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
-      return NextResponse.json(parsed);
-    } catch (err: any) {
-      console.error("OpenAI failed:", err?.message);
-    }
+// FALLBACK 1: Claude Haiku 4.5
+try {
+  console.log("Trying Claude Haiku 4.5...");
+  const response = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 1000,
+    system: prompt,
+    messages: [{
+      role: "user",
+      content: [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+            data: base64Image,
+          },
+        },
+        {
+          type: "text",
+          text: noteHint || "Analyze this item and return the JSON.",
+        },
+      ],
+    }],
+  });
+  const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const parsed = parseJSON(text);
+  const contentError = checkContentErrors(parsed);
+  if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+  await saveResult(parsed, imageUrl, userId, displayName);
+  return NextResponse.json(parsed);
+} catch (err: any) {
+  console.error("Claude Haiku failed:", err?.message);
+}
 
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
 
