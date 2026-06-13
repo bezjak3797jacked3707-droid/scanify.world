@@ -12,7 +12,7 @@ async function compressImage(file: File): Promise<File> {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
-      const maxSize = 800;
+      const maxSize = 1024;
       let width = img.width;
       let height = img.height;
       if (width > height && width > maxSize) { height = (height * maxSize) / width; width = maxSize; }
@@ -23,7 +23,7 @@ async function compressImage(file: File): Promise<File> {
       canvas.toBlob((blob) => {
         resolve(new File([blob!], "scan.jpg", { type: "image/jpeg" }));
         URL.revokeObjectURL(url);
-      }, "image/jpeg", 0.75);
+      }, "image/jpeg", 0.85);
     };
     img.src = url;
   });
