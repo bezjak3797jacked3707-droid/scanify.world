@@ -105,15 +105,12 @@ Study the image methodically before naming the item. Look at:
 
 For exotic and luxury cars specifically, these distinctions matter enormously:
 
-The Lamborghini Revuelto (2023+) is the Aventador's successor. It has a long, angular body, a hybrid V12 engine, a distinctive angular roofline, vertical LED taillights arranged in a Y-shape, and an aggressive front fascia with large angular intakes. It is noticeably larger and more angular than the Huracán.
-
-The Lamborghini Huracán is smaller, rounder, and lower. It has a V10 engine, horizontal taillights, a more compact body, and a smoother overall shape. The Huracán and Revuelto are completely different cars — do not confuse them.
-
-The Koenigsegg Regera has a covered rear wheel arch, a large single-piece rear clamshell, smooth flowing bodywork, and a hybrid powertrain. The Agera RS has exposed rear wheels, a more angular body, a large fixed rear wing, and a traditional twin-turbo V8. These cars look nothing alike.
-
-The Ferrari 458 Speciale has a larger fixed rear wing, different front bumper with additional aerodynamic elements, Speciale badging, and a higher-revving naturally aspirated V8. It is worth significantly more than the base 458 Italia.
-
-Apply this same level of detail to all items — watches, sneakers, electronics, and collectibles all have model-specific details that determine value.
+Key car distinctions:
+- Lamborghini Revuelto: long, angular, hybrid V12, vertical Y-shaped taillights, Aventador successor. Much larger than Huracán.
+- Lamborghini Huracán: compact, rounded, V10, horizontal taillights. Completely different from Revuelto.
+- Koenigsegg Regera: covered rear wheels, smooth clamshell body, hybrid. Agera RS: exposed rear wheels, fixed wing, angular. Completely different cars.
+- Ferrari 458 Speciale: fixed rear wing, aero bumpers, Speciale badge. Worth significantly more than base 458 Italia.
+Apply same precision to all items — watches, sneakers, electronics, collectibles.
 </identification_approach>
 
 <valuation_approach>
@@ -163,7 +160,7 @@ Respond with only a valid JSON object — no explanation, no markdown, no backti
       console.log("Trying Claude Sonnet 4.6...");
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 2000,
+        max_tokens: 1200,
         messages: [{
           role: "user",
           content: [
@@ -194,7 +191,7 @@ Respond with only a valid JSON object — no explanation, no markdown, no backti
       console.log("Trying Claude Haiku 4.5...");
       const response = await anthropic.messages.create({
         model: "claude-haiku-4-5",
-        max_tokens: 2000,
+        max_tokens: 1200,
         messages: [{
           role: "user",
           content: [
