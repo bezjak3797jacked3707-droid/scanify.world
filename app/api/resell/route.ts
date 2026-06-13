@@ -181,7 +181,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
     // PRIMARY: Gemini 2.0 Flash (faster)
     try {
       console.log("Resell: Trying Gemini 2.0 Flash...");
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
       const result = await model.generateContent([
         prompt,
         { inlineData: { mimeType, data: base64Image } },
