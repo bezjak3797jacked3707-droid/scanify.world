@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const base64Image = Buffer.from(imageBuffer).toString("base64");
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
-    const noteHint = note ? `The user has identified this item as: "${note}". Use this as a strong hint.` : "";
+    const noteHint = note ? `The user has identified this item as: "${note}". This is the EXACT model — use it precisely as stated. Do NOT add body styles, variants, trims, or editions that the user did not mention. If user says "Revuelto" name it "Lamborghini Revuelto" — never "Revuelto Spyder" or "Revuelto Ultimae" unless the user said so.` : "";
 
     const prompt = `You are the world's most elite AI appraiser with encyclopedic knowledge of every luxury, exotic, and collectible item ever made. You have the eye of a Sotheby's specialist combined with the data of a Bloomberg terminal. Precision is everything — vague or generic answers are unacceptable.
 
@@ -109,7 +109,8 @@ IDENTIFICATION RULES — CRITICAL:
 - For electronics: identify brand, exact model number, storage, color, generation
 - Never default to a base model when special edition details are visible
 - If you see carbon fiber body panels, aggressive aero, special badges — these indicate a higher spec model
-- The Lamborghini Revuelto has a completely different body style from the Huracán — it is the Aventador successor with hybrid V12
+- - The Lamborghini Revuelto has a completely different body style from the Huracán — it is LONGER, more ANGULAR, has a HYBRID V12, distinctive VERTICAL taillights, and a completely different roofline. The Huracán is SHORTER, ROUNDER, has a V10 and HORIZONTAL taillights. Never confuse these two.
+- If the user provided a note: use it EXACTLY as stated — never add variants or body styles not mentioned
 
 VALUATION RULES — CRITICAL:
 - Use REAL 2026 secondary market values — not MSRP, not 2020 prices
