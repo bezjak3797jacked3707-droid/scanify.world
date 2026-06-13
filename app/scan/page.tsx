@@ -67,14 +67,12 @@ export default function ScanPage() {
     const selected = e.target.files?.[0];
     if (!selected) return;
 
-    // Reset previous upload
     setUploadedUrl(null);
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
     setError("");
     e.target.value = "";
 
-    // Pre-upload in background immediately
     setIsPreUploading(true);
     try {
       const compressed = await compressImage(selected);
@@ -103,7 +101,6 @@ export default function ScanPage() {
     try {
       let publicUrl = uploadedUrl;
 
-      // If pre-upload didn't finish, upload now
       if (!publicUrl) {
         const compressed = await compressImage(file);
         const fileName = `${Date.now()}.jpg`;
@@ -127,7 +124,13 @@ export default function ScanPage() {
 
   return (
     <main className="min-h-screen flex flex-col" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
       {!preview ? (
         <div className="flex flex-col flex-1 items-center justify-center px-10 gap-6">
