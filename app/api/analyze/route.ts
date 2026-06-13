@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
@@ -7,7 +6,6 @@ import { updateStreak } from "@/lib/streak";
 
 export const maxDuration = 300;
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -84,7 +82,9 @@ export async function POST(req: NextRequest) {
     const base64Image = Buffer.from(imageBuffer).toString("base64");
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
-    const noteHint = note ? `The user has identified this item as: "${note}". This is the EXACT model — use it precisely as stated. Do NOT add body styles, variants, trims, or editions that the user did not mention. If user says "Revuelto" name it "Lamborghini Revuelto" — never "Revuelto Spyder" or "Revuelto Ultimae" unless the user said so.` : "";
+    const noteHint = note
+      ? `The user has identified this item as: "${note}". This is the EXACT model — use it precisely as stated. Do NOT add body styles, variants, trims, or editions that the user did not mention. If user says "Revuelto" name it "Lamborghini Revuelto" — never "Revuelto Spyder" or "Revuelto Ultimae" unless the user said so.`
+      : "";
 
     const prompt = `You are the world's most elite AI appraiser with encyclopedic knowledge of every luxury, exotic, and collectible item ever made. You have the eye of a Sotheby's specialist combined with the data of a Bloomberg terminal. Precision is everything — vague or generic answers are unacceptable.
 
@@ -148,28 +148,11 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   ]
 }`;
 
-    // PRIMARY: Gemini 2.0 Flash (faster than 2.5)
+    // PRIMARY: Claude Haiku 4.5 (fast + accurate)
     try {
-      console.log("Trying Gemini 2.0 Flash...");
-      const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
-      const result = await model.generateContent([
-        prompt,
-        { inlineData: { mimeType, data: base64Image } },
-      ]);
-      const parsed = parseJSON(result.response.text().trim());
-      const contentError = checkContentErrors(parsed);
-      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
-      return NextResponse.json(parsed);
-    } catch (err: any) {
-      console.error("Gemini 2.0 Flash failed:", err?.message);
-    }
-
-    // FALLBACK 1: Claude
-    try {
-      console.log("Trying Claude...");
+      console.log("Trying Claude Haiku 4.5...");
       const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-5",
+        model: "claude-haiku-4-5",
         max_tokens: 2000,
         messages: [{
           role: "user",
@@ -193,10 +176,41 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
       await saveResult(parsed, imageUrl, userId, displayName);
       return NextResponse.json(parsed);
     } catch (err: any) {
-      console.error("Claude failed:", err?.message);
+      console.error("Claude Haiku failed:", err?.message);
     }
 
-    // FALLBACK 2: OpenAI GPT-4o
+    // FALLBACK 1: Claude Sonnet 4.6 (more accurate)
+    try {
+      console.log("Trying Claude Sonnet 4.6...");
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        messages: [{
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: base64Image,
+              },
+            },
+            { type: "text", text: prompt },
+          ],
+        }],
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const parsed = parseJSON(text);
+      const contentError = checkContentErrors(parsed);
+      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+      await saveResult(parsed, imageUrl, userId, displayName);
+      return NextResponse.json(parsed);
+    } catch (err: any) {
+      console.error("Claude Sonnet failed:", err?.message);
+    }
+
+    // FALLBACK 2: OpenAI GPT-4o (last resort)
     try {
       console.log("Trying OpenAI GPT-4o...");
       const response = await openai.chat.completions.create({
