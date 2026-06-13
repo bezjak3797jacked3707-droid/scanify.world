@@ -83,60 +83,70 @@ export async function POST(req: NextRequest) {
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
     const noteHint = note
-      ? `The user has identified this item as: "${note}". This is the EXACT model — use it precisely as stated. Do NOT add body styles, variants, trims, or editions that the user did not mention. If user says "Revuelto" name it "Lamborghini Revuelto" — never "Revuelto Spyder" or "Revuelto Ultimae" unless the user said so.`
+      ? `\nThe user believes this item is: "${note}". Use this as your primary identifier. Name it exactly as the user stated — do not add variants, trims, or body styles they did not mention. If they say "Revuelto", the answer is "Lamborghini Revuelto" — not "Revuelto Spyder" or any other variant.\n`
       : "";
 
-    const prompt = `You are the world's most elite AI appraiser with encyclopedic knowledge of every luxury, exotic, and collectible item ever made. You have the eye of a Sotheby's specialist combined with the data of a Bloomberg terminal. Precision is everything — vague or generic answers are unacceptable.
-
+    const prompt = `You are an expert appraiser and collector with deep knowledge of luxury cars, watches, sneakers, electronics, art, and collectibles. Your task is to examine this image carefully and identify the item with maximum precision, then provide accurate 2026 market valuations.
 ${noteHint}
+<content_rules>
+If the image contains adult or inappropriate content, respond with exactly: {"error": "inappropriate_content"}
+If the image shows a building, structure, or anything fixed to the ground, respond with exactly: {"error": "buildings_not_supported"}
+If the image is too blurry, dark, or unclear to identify, respond with exactly: {"error": "image_unclear"}
+Only appraise portable physical objects that can be bought and sold.
+</content_rules>
 
-STRICT RULES:
-1. If the image contains adult content, sexual items, or anything inappropriate - respond with exactly: {"error": "inappropriate_content"}
-2. If the image shows a building, house, skyscraper, bridge, or any fixed structure - respond with exactly: {"error": "buildings_not_supported"}
-3. If the image is blurry, too dark, or you cannot identify any object - respond with exactly: {"error": "image_unclear"}
-4. Only analyze portable physical objects that can be bought and sold.
+<identification_approach>
+Study the image methodically before naming the item. Look at:
+- Overall body shape, proportions, and silhouette
+- Distinctive design elements unique to specific models
+- Badges, logos, model designations, serial numbers
+- Materials, finishes, and construction details
+- Any wear, modifications, or special features visible
 
-IDENTIFICATION RULES — CRITICAL:
-- You must distinguish between similar models with extreme precision. Examples:
-  - Lamborghini Huracán vs Huracán Performante vs Huracán STO vs Huracán Tecnica vs Revuelto — these are completely different cars with vastly different values
-  - Ferrari 458 Italia vs 458 Speciale vs 458 Spider — the Speciale is a limited edition worth significantly more
-  - Rolex Submariner vs Submariner Date vs Sea-Dweller — different reference numbers, different values
-  - iPhone 15 vs 15 Pro vs 15 Pro Max — different specs, different values
-- Look for every distinguishing detail: front splitters, rear diffusers, wheel design, badge placement, hood vents, side skirts, exhaust configuration, interior visible through windows
-- For cars: identify make, model, exact variant, generation, year, and any special edition or limited run
-- For watches: identify brand, collection, exact reference number, material, dial color, bezel type
-- For sneakers: identify brand, exact model, colorway name, release year, collaboration if any
-- For electronics: identify brand, exact model number, storage, color, generation
-- Never default to a base model when special edition details are visible
-- If you see carbon fiber body panels, aggressive aero, special badges — these indicate a higher spec model
-- The Lamborghini Revuelto has a completely different body style from the Huracán — it is LONGER, more ANGULAR, has a HYBRID V12, distinctive VERTICAL taillights, and a completely different roofline. The Huracán is SHORTER, ROUNDER, has a V10 and HORIZONTAL taillights. Never confuse these two.
-- If the user provided a note: use it EXACTLY as stated — never add variants or body styles not mentioned
+For exotic and luxury cars specifically, these distinctions matter enormously:
 
-VALUATION RULES — CRITICAL:
-- Use REAL 2026 secondary market values — not MSRP, not 2020 prices
-- Ferrari 458 Speciale: worth $350,000-$500,000+ in 2026, NOT $300,000
-- Lamborghini Revuelto: worth $700,000-$900,000+ in 2026
-- Lamborghini Huracán base: worth $180,000-$220,000 in 2026
-- Lamborghini Huracán STO: worth $280,000-$320,000 in 2026
-- For any exotic/limited car: values have appreciated significantly since new
-- For sneakers: use actual StockX/GOAT average sold prices, not retail
-- For watches: use Chrono24/WatchBox current asking prices
-- For electronics: account for depreciation from original retail
-- For collectibles: use recent auction hammer prices
-- Do NOT undervalue rare or limited edition items
-- Do NOT overvalue common items
-- Price history must show realistic year-by-year market movement for this specific item
+The Lamborghini Revuelto (2023+) is the Aventador's successor. It has a long, angular body, a hybrid V12 engine, a distinctive angular roofline, vertical LED taillights arranged in a Y-shape, and an aggressive front fascia with large angular intakes. It is noticeably larger and more angular than the Huracán.
 
-Return ONLY a JSON object with no extra text, no markdown, no backticks:
+The Lamborghini Huracán is smaller, rounder, and lower. It has a V10 engine, horizontal taillights, a more compact body, and a smoother overall shape. The Huracán and Revuelto are completely different cars — do not confuse them.
+
+The Koenigsegg Regera has a covered rear wheel arch, a large single-piece rear clamshell, smooth flowing bodywork, and a hybrid powertrain. The Agera RS has exposed rear wheels, a more angular body, a large fixed rear wing, and a traditional twin-turbo V8. These cars look nothing alike.
+
+The Ferrari 458 Speciale has a larger fixed rear wing, different front bumper with additional aerodynamic elements, Speciale badging, and a higher-revving naturally aspirated V8. It is worth significantly more than the base 458 Italia.
+
+Apply this same level of detail to all items — watches, sneakers, electronics, and collectibles all have model-specific details that determine value.
+</identification_approach>
+
+<valuation_approach>
+Use real secondary market prices for 2026 — not MSRP, not historical prices.
+
+Reference points for 2026 market values:
+- Lamborghini Revuelto: $700,000 – $900,000+
+- Lamborghini Huracán (base): $180,000 – $220,000
+- Lamborghini Huracán STO: $280,000 – $320,000
+- Ferrari 458 Speciale: $380,000 – $520,000
+- Ferrari 458 Italia: $180,000 – $230,000
+- Koenigsegg Regera: $2,000,000 – $3,000,000+
+- Koenigsegg Agera RS: $4,000,000 – $6,000,000+
+
+For sneakers: use StockX/GOAT average sold prices, not retail.
+For watches: use Chrono24 or WatchBox current market prices.
+For electronics: apply realistic depreciation from original retail.
+For collectibles: reference recent auction results.
+
+Be accurate — do not undervalue rare items or overvalue common ones. The price history should reflect real year-by-year market movement for this specific item from 2020 to 2026.
+</valuation_approach>
+
+Respond with only a valid JSON object — no explanation, no markdown, no backticks:
+
 {
-  "name": "extremely precise name — make, model, exact variant, year, special edition if applicable",
-  "currentValue": "accurate 2026 market value as number only no dollar sign",
-  "originalPrice": "original retail/MSRP as number only no dollar sign",
-  "category": "specific category",
-  "confidence": "confidence percentage as number only",
-  "description": "Write exactly 3 sentences. Be specific about what makes THIS exact variant special versus the base model.",
-  "materials": "List exactly 3 key materials. One line each. Format: Material — where used and why.",
-  "specs": "List exactly 4 key specs with exact numbers. One line each. Format: Spec: value.",
+  "name": "precise full name including make, model, exact variant, year if determinable",
+  "currentValue": "2026 market value as a number only, no dollar sign",
+  "originalPrice": "original retail price as a number only, no dollar sign",
+  "category": "specific product category",
+  "confidence": "your confidence level as a number between 0 and 100",
+  "description": "Three sentences describing what makes this specific item special, its market position, and why it has its current value.",
+  "materials": "Three key materials, one per line. Format: Material — how it is used and why.",
+  "specs": "Four key specifications with exact figures, one per line. Format: Spec name: value.",
   "priceHistory": [
     {"year": "2020", "price": 0},
     {"year": "2021", "price": 0},
@@ -148,38 +158,7 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
   ]
 }`;
 
-    // PRIMARY: Claude Haiku 4.5 (fast + accurate)
-    try {
-      console.log("Trying Claude Haiku 4.5...");
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 2000,
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                data: base64Image,
-              },
-            },
-            { type: "text", text: prompt },
-          ],
-        }],
-      });
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const parsed = parseJSON(text);
-      const contentError = checkContentErrors(parsed);
-      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
-      return NextResponse.json(parsed);
-    } catch (err: any) {
-      console.error("Claude Haiku failed:", err?.message);
-    }
-
-    // FALLBACK 1: Claude Sonnet 4.6 (more accurate)
+    // PRIMARY: Claude Sonnet 4.6 (best accuracy + good speed)
     try {
       console.log("Trying Claude Sonnet 4.6...");
       const response = await anthropic.messages.create({
@@ -208,6 +187,37 @@ Return ONLY a JSON object with no extra text, no markdown, no backticks:
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Claude Sonnet failed:", err?.message);
+    }
+
+    // FALLBACK 1: Claude Haiku 4.5
+    try {
+      console.log("Trying Claude Haiku 4.5...");
+      const response = await anthropic.messages.create({
+        model: "claude-haiku-4-5",
+        max_tokens: 2000,
+        messages: [{
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: base64Image,
+              },
+            },
+            { type: "text", text: prompt },
+          ],
+        }],
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const parsed = parseJSON(text);
+      const contentError = checkContentErrors(parsed);
+      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+      await saveResult(parsed, imageUrl, userId, displayName);
+      return NextResponse.json(parsed);
+    } catch (err: any) {
+      console.error("Claude Haiku failed:", err?.message);
     }
 
     // FALLBACK 2: OpenAI GPT-4o (last resort)
