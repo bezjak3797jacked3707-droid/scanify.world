@@ -98,3 +98,12 @@ h1, h2, h3, h4, h5, h6 {
   0%, 100% { opacity: 0.2; transform: scaleY(0.6); }
   50% { opacity: 1; transform: scaleY(1.4); }
 }
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

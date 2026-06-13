@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { vibrate } from "@/lib/haptics";
 import type { User } from "@supabase/supabase-js";
 
 const PLATFORMS = [
@@ -81,6 +82,7 @@ export default function ResellPage() {
 
   async function handleResellScan() {
     if (!file || !user) return;
+    vibrate(20);
     setIsUploading(true);
     setError("");
     try {
@@ -113,7 +115,7 @@ export default function ResellPage() {
 
   return (
     <main className="min-h-screen pb-24" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
 
       <div className="max-w-md mx-auto px-5 py-8 space-y-6">
 
@@ -146,7 +148,7 @@ export default function ResellPage() {
 
         {!preview ? (
           <div
-            onClick={() => !limitReached && fileInputRef.current?.click()}
+            onClick={() => { if (!limitReached) { vibrate(); fileInputRef.current?.click(); } }}
             className="w-full rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
             style={{ background: "var(--color-surface)", border: "2px dashed var(--color-border)", minHeight: 180, opacity: limitReached ? 0.5 : 1 }}
           >

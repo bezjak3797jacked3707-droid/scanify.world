@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
+import { updateStreak } from "@/lib/streak";
 
 export const maxDuration = 300;
 
@@ -26,7 +27,10 @@ async function saveResult(parsed: any, imageUrl: string, userId: string | null, 
     display_name: displayName || "Anonymous",
   });
   if (dbError) console.error("DB save error:", dbError.message);
-  if (userId) await supabase.rpc("increment_scans", { user_id_input: userId });
+  if (userId) {
+    await supabase.rpc("increment_scans", { user_id_input: userId });
+    await updateStreak(userId);
+  }
 }
 
 function parseJSON(text: string) {
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     const noteHint = note ? `The user has identified this item as: "${note}". Use this as a strong hint.` : "";
 
-    const prompt = `You are the world's most accurate AI appraiser with expert knowledge of every physical object that exists. Your job is to identify items with extreme precision and provide accurate market valuations.
+    const prompt = `You are the world's most elite AI appraiser with encyclopedic knowledge of every luxury, exotic, and collectible item ever made. You have the eye of a Sotheby's specialist combined with the data of a Bloomberg terminal. Precision is everything — vague or generic answers are unacceptable.
 
 ${noteHint}
 
@@ -92,37 +96,45 @@ STRICT RULES:
 3. If the image is blurry, too dark, or you cannot identify any object - respond with exactly: {"error": "image_unclear"}
 4. Only analyze portable physical objects that can be bought and sold.
 
-IDENTIFICATION RULES:
-- Look extremely carefully at ALL visible details: logos, badges, model numbers, color, shape, design elements, stitching, hardware, labels
-- For cars: identify the exact make, model, year, trim level and any special edition
-- For shoes: identify exact colorway and edition
-- For electronics: identify exact model number and variant
-- For watches: identify exact reference number if visible
-- For clothing: identify brand, collection, and season if possible
-- Never guess vaguely - if you can see a logo or badge always use it
-- If the user provided a hint about the item, use it heavily to guide identification
+IDENTIFICATION RULES — CRITICAL:
+- You must distinguish between similar models with extreme precision. Examples:
+  - Lamborghini Huracán vs Huracán Performante vs Huracán STO vs Huracán Tecnica vs Revuelto — these are completely different cars with vastly different values
+  - Ferrari 458 Italia vs 458 Speciale vs 458 Spider — the Speciale is a limited edition worth significantly more
+  - Rolex Submariner vs Submariner Date vs Sea-Dweller — different reference numbers, different values
+  - iPhone 15 vs 15 Pro vs 15 Pro Max — different specs, different values
+- Look for every distinguishing detail: front splitters, rear diffusers, wheel design, badge placement, hood vents, side skirts, exhaust configuration, interior visible through windows
+- For cars: identify make, model, exact variant, generation, year, and any special edition or limited run
+- For watches: identify brand, collection, exact reference number, material, dial color, bezel type
+- For sneakers: identify brand, exact model, colorway name, release year, collaboration if any
+- For electronics: identify brand, exact model number, storage, color, generation
+- Never default to a base model when special edition details are visible
+- If you see carbon fiber body panels, aggressive aero, special badges — these indicate a higher spec model
+- The Lamborghini Revuelto has a completely different body style from the Huracán — it is the Aventador successor with hybrid V12
 
-VALUATION RULES:
-- Research current real market prices not just retail prices
-- For cars use current private party sale value
-- For sneakers use current average sold prices on StockX/GOAT
-- For electronics use current used market value with depreciation
-- For collectibles use recent auction results
-- Be specific with numbers - avoid wide ranges
-- The current year is 2026. Always provide 2026 market values for currentValue
-- The priceHistory must end with 2026 showing the same value as currentValue
-- Be conservative with valuations — when in doubt price lower not higher
-- Do not overestimate — users should be pleasantly surprised not disappointed
+VALUATION RULES — CRITICAL:
+- Use REAL 2026 secondary market values — not MSRP, not 2020 prices
+- Ferrari 458 Speciale: worth $350,000-$500,000+ in 2026, NOT $300,000
+- Lamborghini Revuelto: worth $700,000-$900,000+ in 2026
+- Lamborghini Huracán base: worth $180,000-$220,000 in 2026
+- Lamborghini Huracán STO: worth $280,000-$320,000 in 2026
+- For any exotic/limited car: values have appreciated significantly since new
+- For sneakers: use actual StockX/GOAT average sold prices, not retail
+- For watches: use Chrono24/WatchBox current asking prices
+- For electronics: account for depreciation from original retail
+- For collectibles: use recent auction hammer prices
+- Do NOT undervalue rare or limited edition items
+- Do NOT overvalue common items
+- Price history must show realistic year-by-year market movement for this specific item
 
 Return ONLY a JSON object with no extra text, no markdown, no backticks:
 {
-  "name": "extremely specific and accurate product name with exact model, variant, year, and edition",
-  "currentValue": "the current 2026 market value in USD as a number only no dollar sign",
-  "originalPrice": "original retail price in USD as a number only no dollar sign",
-  "category": "specific product category",
-  "confidence": "your confidence percentage as a number only",
-  "description": "Write exactly 3 sentences. Cover what makes this item special and its market context.",
-  "materials": "List exactly 3 key materials. One line each. Format: Material — brief reason why used.",
+  "name": "extremely precise name — make, model, exact variant, year, special edition if applicable",
+  "currentValue": "accurate 2026 market value as number only no dollar sign",
+  "originalPrice": "original retail/MSRP as number only no dollar sign",
+  "category": "specific category",
+  "confidence": "confidence percentage as number only",
+  "description": "Write exactly 3 sentences. Be specific about what makes THIS exact variant special versus the base model.",
+  "materials": "List exactly 3 key materials. One line each. Format: Material — where used and why.",
   "specs": "List exactly 4 key specs with exact numbers. One line each. Format: Spec: value.",
   "priceHistory": [
     {"year": "2020", "price": 0},

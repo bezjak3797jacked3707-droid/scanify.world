@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from "@/lib/supabase";
+import { updateStreak } from "@/lib/streak";
 
 export const maxDuration = 300;
 
@@ -43,6 +44,8 @@ async function saveResellResult(parsed: any, imageUrl: string, userId: string) {
     .from("profiles")
     .update({ resell_scans_used: (current?.resell_scans_used || 0) + 1 })
     .eq("id", userId);
+
+  await updateStreak(userId);
 }
 
 export async function POST(req: NextRequest) {

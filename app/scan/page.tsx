@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { vibrate } from "@/lib/haptics";
 import type { User } from "@supabase/supabase-js";
 
 async function compressImage(file: File): Promise<File> {
@@ -31,7 +32,8 @@ async function compressImage(file: File): Promise<File> {
 
 export default function ScanPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const libraryInputRef = useRef<HTMLInputElement | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -57,10 +59,18 @@ export default function ScanPage() {
   const scanLimit = 3;
   const limitReached = !isPro && scansUsed >= scanLimit;
 
-  function openPicker() {
+  function openCamera() {
     if (!user) { router.push("/"); return; }
     if (limitReached) return;
-    fileInputRef.current?.click();
+    vibrate();
+    cameraInputRef.current?.click();
+  }
+
+  function openLibrary() {
+    if (!user) { router.push("/"); return; }
+    if (limitReached) return;
+    vibrate();
+    libraryInputRef.current?.click();
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -97,6 +107,7 @@ export default function ScanPage() {
 
   async function handleScan() {
     if (!file) return;
+    vibrate(20);
     setIsUploading(true);
     setError("");
 
@@ -127,7 +138,8 @@ export default function ScanPage() {
 
   return (
     <main className="min-h-screen flex flex-col" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+      <input ref={libraryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {!preview ? (
         <div className="flex flex-col flex-1 items-center justify-center px-10 gap-6">
@@ -159,10 +171,10 @@ export default function ScanPage() {
             <span className="absolute bottom-0 right-0 w-9 h-9 border-b-[3px] border-r-[3px]" style={{ borderColor: limitReached ? "var(--color-border)" : "var(--color-green)" }} />
 
             <button
-              onClick={openPicker}
+              onClick={openCamera}
               type="button"
               disabled={limitReached}
-              aria-label="Open camera or file picker"
+              aria-label="Open camera"
               className="w-24 h-24 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:scale-95 disabled:opacity-30"
               style={{ background: "var(--color-green)" }}
             >
@@ -178,6 +190,12 @@ export default function ScanPage() {
               {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
             </p>
           )}
+
+          {!limitReached && user && (
+            <button onClick={openLibrary} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>
+              Choose from gallery
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col flex-1 px-5 py-6 gap-5">
@@ -186,9 +204,14 @@ export default function ScanPage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <button onClick={openPicker} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
-              Retake photo
-            </button>
+            <div className="flex items-center gap-4">
+              <button onClick={openCamera} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
+                Retake photo
+              </button>
+              <button onClick={openLibrary} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>
+                Gallery
+              </button>
+            </div>
             {isPreUploading && (
               <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>Preparing…</p>
             )}
