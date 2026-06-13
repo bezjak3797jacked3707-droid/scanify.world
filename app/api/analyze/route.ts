@@ -109,7 +109,7 @@ IDENTIFICATION RULES — CRITICAL:
 - For electronics: identify brand, exact model number, storage, color, generation
 - Never default to a base model when special edition details are visible
 - If you see carbon fiber body panels, aggressive aero, special badges — these indicate a higher spec model
-- - The Lamborghini Revuelto has a completely different body style from the Huracán — it is LONGER, more ANGULAR, has a HYBRID V12, distinctive VERTICAL taillights, and a completely different roofline. The Huracán is SHORTER, ROUNDER, has a V10 and HORIZONTAL taillights. Never confuse these two.
+- The Lamborghini Revuelto has a completely different body style from the Huracán — it is LONGER, more ANGULAR, has a HYBRID V12, distinctive VERTICAL taillights, and a completely different roofline. The Huracán is SHORTER, ROUNDER, has a V10 and HORIZONTAL taillights. Never confuse these two.
 - If the user provided a note: use it EXACTLY as stated — never add variants or body styles not mentioned
 
 VALUATION RULES — CRITICAL:
