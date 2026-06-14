@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -35,12 +35,12 @@ interface Achievement {
 
 function buildAchievements(totalScans: number, categories: number, longestStreak: number, portfolioValue: number): Achievement[] {
   return [
-    { emoji: "🔍", label: "First Scan", unlocked: totalScans >= 1 },
-    { emoji: "📦", label: "5 Scans", unlocked: totalScans >= 5 },
-    { emoji: "🏅", label: "25 Scans", unlocked: totalScans >= 25 },
-    { emoji: "🗂️", label: "Collector", unlocked: categories >= 5 },
-    { emoji: "💰", label: "$10k Portfolio", unlocked: portfolioValue >= 10000 },
-    { emoji: "🔥", label: "7 Day Streak", unlocked: longestStreak >= 7 },
+    { emoji: "­ƒöì", label: "First Scan", unlocked: totalScans >= 1 },
+    { emoji: "­ƒôª", label: "5 Scans", unlocked: totalScans >= 5 },
+    { emoji: "­ƒÅà", label: "25 Scans", unlocked: totalScans >= 25 },
+    { emoji: "­ƒùé´©Å", label: "Collector", unlocked: categories >= 5 },
+    { emoji: "­ƒÆ░", label: "$10k Portfolio", unlocked: portfolioValue >= 10000 },
+    { emoji: "­ƒöÑ", label: "7 Day Streak", unlocked: longestStreak >= 7 },
   ];
 }
 
@@ -140,17 +140,17 @@ export default function ProfilePage() {
             border: profile?.is_pro ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-green)",
             color: profile?.is_pro ? "var(--color-gold)" : "#00C853",
           }}>
-            {profile?.is_pro ? "⭐ Pro Member" : "Free Plan"}
+            {profile?.is_pro ? "Ô¡É Pro Member" : "Free Plan"}
           </div>
         </div>
 
         {!!profile?.current_streak && profile.current_streak > 0 && (
           <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.12) 0%, var(--color-surface) 70%)", border: "1px solid rgba(201,168,76,0.3)" }}>
-            <span className="text-3xl">🔥</span>
+            <span className="text-3xl">­ƒöÑ</span>
             <div>
               <p className="text-lg font-bold" style={{ color: "var(--color-gold)" }}>{profile.current_streak} day{profile.current_streak !== 1 ? "s" : ""} streak</p>
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                {profile.longest_streak > profile.current_streak ? `Longest: ${profile.longest_streak} days` : "Keep it going — scan today!"}
+                {profile.longest_streak > profile.current_streak ? `Longest: ${profile.longest_streak} days` : "Keep it going ÔÇö scan today!"}
               </p>
             </div>
           </div>
@@ -225,10 +225,10 @@ export default function ProfilePage() {
 
         {bestScans.length > 0 && (
           <div className="rounded-2xl p-5 space-y-3" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)", border: "1px solid rgba(201,168,76,0.3)" }}>
-            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>🏆 Your Top Scans</p>
+            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>­ƒÅå Your Top Scans</p>
             {bestScans.map((scan, index) => (
               <div key={index} className="flex gap-3 items-center">
-                <span className="text-lg flex-shrink-0">{index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}</span>
+                <span className="text-lg flex-shrink-0">{index === 0 ? "­ƒÑç" : index === 1 ? "­ƒÑê" : "­ƒÑë"}</span>
                 {scan.image_url && <img src={scan.image_url} alt={scan.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />}
                 <div>
                   <p className="font-semibold text-sm">{scan.name}</p>
