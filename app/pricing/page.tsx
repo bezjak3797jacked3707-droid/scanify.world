@@ -57,8 +57,8 @@ function CheckIcon({ gold }: { gold?: boolean }) {
 function CrossIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
-      <circle cx="12" cy="12" r="11" fill="rgba(255,255,255,0.02)" />
-      <path d="M9 9l6 6M15 9l-6 6" stroke="#2a2a2a" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="11" fill="rgba(128,128,128,0.06)" />
+      <path d="M9 9l6 6M15 9l-6 6" stroke="var(--color-text-faint)" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -103,33 +103,33 @@ export default function PricingPage() {
   }
 
   return (
-    <main className="min-h-screen pb-12" style={{ background: "var(--color-black)", color: "#ededed" }}>
+    <main className="min-h-screen pb-12" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <div className="px-5 pt-10">
 
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pricing</p>
           <h1 className="text-4xl leading-tight mb-3" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>Simple, honest pricing</h1>
-          <p className="text-sm" style={{ color: "#555" }}>Start free. Upgrade when you want more.</p>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Start free. Upgrade when you want more.</p>
         </div>
 
         <div className="flex flex-col gap-4 mb-8">
 
           {/* Free card */}
           <div className="rounded-3xl p-5 flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-            <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "#555" }}>Free</p>
+            <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-text-muted)" }}>Free</p>
             <div className="flex items-end gap-1 mb-5">
-              <span className="text-4xl font-bold" style={{ color: "#ededed" }}>$0</span>
-              <span className="text-xs pb-1.5" style={{ color: "#3a3a3a" }}>/mo</span>
+              <span className="text-4xl font-bold" style={{ color: "var(--color-text-primary)" }}>$0</span>
+              <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/mo</span>
             </div>
             <ul className="flex flex-col gap-3 flex-1 mb-5">
               {FREE_FEATURES.map((f) => (
                 <li key={f.label} className="flex items-start gap-2">
                   {f.included ? <CheckIcon /> : <CrossIcon />}
-                  <span className="text-[11px] leading-snug" style={{ color: f.included ? "#aaa" : "#333" }}>{f.label}</span>
+                  <span className="text-[11px] leading-snug" style={{ color: f.included ? "var(--color-text-secondary)" : "var(--color-text-faint)" }}>{f.label}</span>
                 </li>
               ))}
             </ul>
-            <Link href="/scan" className="block w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-60" style={{ border: "1px solid #222", color: "#555" }}>
+            <Link href="/scan" className="block w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-60" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
               Get Started
             </Link>
           </div>
@@ -142,13 +142,13 @@ export default function PricingPage() {
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pro</p>
             <div className="flex items-end gap-1 mb-5">
             <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$6.99</span>
-              <span className="text-xs pb-1.5" style={{ color: "#555" }}>/mo</span>
+              <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/mo</span>
             </div>
             <ul className="flex flex-col gap-3 flex-1 mb-5">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <CheckIcon gold />
-                  <span className="text-[11px] leading-snug" style={{ color: "#ccc" }}>{f}</span>
+                  <span className="text-[11px] leading-snug" style={{ color: "var(--color-text-secondary)" }}>{f}</span>
                 </li>
               ))}
             </ul>
@@ -167,13 +167,13 @@ export default function PricingPage() {
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Business</p>
             <div className="flex items-end gap-1 mb-5">
               <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$14.99</span>
-              <span className="text-xs pb-1.5" style={{ color: "#555" }}>/mo</span>
+              <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/mo</span>
             </div>
             <ul className="flex flex-col gap-3 flex-1 mb-5">
               {BUSINESS_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <CheckIcon gold />
-                  <span className="text-[11px] leading-snug" style={{ color: "#ccc" }}>{f}</span>
+                  <span className="text-[11px] leading-snug" style={{ color: "var(--color-text-secondary)" }}>{f}</span>
                 </li>
               ))}
             </ul>
@@ -193,16 +193,16 @@ export default function PricingPage() {
         <div className="rounded-3xl overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
           <div className="grid grid-cols-4 px-4 py-4" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)" }}>
             <span className="text-xs font-semibold" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", letterSpacing: "0.06em" }}>Compare</span>
-            <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "#444" }}>Free</span>
+            <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-text-secondary)" }}>Free</span>
             <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-gold)" }}>Pro</span>
             <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-gold)" }}>Biz</span>
           </div>
 
           {COMPARISON.map((row, i) => (
-            <div key={row.label} className="grid grid-cols-4 px-4 py-3 items-center" style={{ borderBottom: i < COMPARISON.length - 1 ? "1px solid #0f0f0f" : undefined, background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
-              <span className="text-[10px]" style={{ color: "#555" }}>{row.label}</span>
+            <div key={row.label} className="grid grid-cols-4 px-4 py-3 items-center" style={{ borderBottom: i < COMPARISON.length - 1 ? "1px solid var(--color-border)" : undefined, background: i % 2 === 0 ? "transparent" : "var(--color-card-alt)" }}>
+              <span className="text-[10px]" style={{ color: "var(--color-text-secondary)" }}>{row.label}</span>
               <div className="flex justify-center items-center">
-                {typeof row.free === "boolean" ? (row.free ? <CheckIcon /> : <CrossIcon />) : <span className="text-[10px]" style={{ color: "#3a3a3a" }}>{row.free}</span>}
+                {typeof row.free === "boolean" ? (row.free ? <CheckIcon /> : <CrossIcon />) : <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>{row.free}</span>}
               </div>
               <div className="flex justify-center items-center">
                 {typeof row.pro === "boolean" ? (row.pro ? <CheckIcon gold /> : <CrossIcon />) : <span className="text-[10px] font-medium" style={{ color: "var(--color-gold)" }}>{row.pro}</span>}
@@ -214,7 +214,7 @@ export default function PricingPage() {
           ))}
         </div>
 
-        <p className="text-center text-[11px] mt-8" style={{ color: "#2e2e2e" }}>
+        <p className="text-center text-[11px] mt-8" style={{ color: "var(--color-text-faint)" }}>
           Pricing in USD · Cancel anytime · No hidden fees
         </p>
 

@@ -72,7 +72,7 @@ export default function BottomNav() {
   const indicatorLeft = `${active * 20 + 10}%`;
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50" style={{ background: "#0d0d0d", borderTop: "1px solid #1a1a1a" }}>
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50" style={{ background: "var(--nav-bg)", borderTop: "1px solid var(--nav-border)", boxShadow: "var(--nav-shadow)" }}>
       <div
         className="absolute top-0 rounded-full"
         style={{
