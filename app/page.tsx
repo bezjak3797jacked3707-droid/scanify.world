@@ -286,7 +286,7 @@ export default function Home() {
           Scanify
         </span>
         <div className="flex gap-6 text-xs">
-          <a href="#" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Instagram</a>
+        <a href="https://www.instagram.com/scanify.world/" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Instagram</a>
           <a href="/terms" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Terms of Service</a>
           <a href="/privacy" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Privacy Policy</a>
         </div>
