@@ -16,6 +16,7 @@ interface Scan {
 }
 
 type SortMode = "recent" | "expensive";
+type TimeMode = "month" | "alltime";
 
 function parsePrice(value: string): number {
   return parseFloat(value.replace(/[^0-9.]/g, "")) || 0;
@@ -25,10 +26,15 @@ function daysAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000);
   if (diff === 0) return "Today";
   if (diff === 1) return "1d ago";
-  return `${diff}d ago`;
+  if (diff < 30) return `${diff}d ago`;
+  const months = Math.floor(diff / 30);
+  if (months === 1) return "1mo ago";
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(months / 12);
+  return `${years}y ago`;
 }
 
-function EmptyState({ onScan }: { onScan: () => void }) {
+function EmptyState({ onScan, allTime }: { onScan: () => void; allTime: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-5">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
@@ -38,7 +44,9 @@ function EmptyState({ onScan }: { onScan: () => void }) {
         </svg>
       </div>
       <div className="text-center">
-        <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text-muted)" }}>No scans this month</p>
+        <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text-muted)" }}>
+          {allTime ? "No scans yet" : "No scans this month"}
+        </p>
         <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>Your scanned items will appear here</p>
       </div>
       <button onClick={onScan} className="px-6 py-3 rounded-2xl text-sm font-semibold tracking-widest uppercase" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
@@ -53,12 +61,12 @@ export default function HistoryPage() {
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortMode>("recent");
+  const [timeMode, setTimeMode] = useState<TimeMode>("month");
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchScans() {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setIsLoggedIn(false);
@@ -67,19 +75,37 @@ export default function HistoryPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("scan_results")
-        .select("id, created_at, image_url, name, current_value, category, confidence, scan_type")
-        .eq("user_id", session.user.id)
-        .gte("created_at", startOfMonth)
-        .order("created_at", { ascending: false });
-
-      if (error) console.error("Failed to fetch scans:", error.message);
-      else setScans(data || []);
-      setLoading(false);
+      setUserId(session.user.id);
+      await loadScans(session.user.id, timeMode);
     }
     fetchScans();
   }, []);
+
+  async function loadScans(uid: string, mode: TimeMode) {
+    setLoading(true);
+
+    let query = supabase
+      .from("scan_results")
+      .select("id, created_at, image_url, name, current_value, category, confidence, scan_type")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+
+    if (mode === "month") {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      query = query.gte("created_at", startOfMonth);
+    }
+
+    const { data, error } = await query;
+    if (error) console.error("Failed to fetch scans:", error.message);
+    else setScans(data || []);
+    setLoading(false);
+  }
+
+  async function handleTimeModeChange(mode: TimeMode) {
+    setTimeMode(mode);
+    if (userId) await loadScans(userId, mode);
+  }
 
   const sorted = useMemo<Scan[]>(() => {
     if (sort === "expensive") return [...scans].sort((a, b) => parsePrice(b.current_value) - parsePrice(a.current_value));
@@ -103,9 +129,11 @@ export default function HistoryPage() {
     <main className="min-h-screen pb-10" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <div className="px-5 pt-8">
 
-        <div className="flex items-start justify-between mb-1">
+        <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "var(--color-gold)" }}>{monthLabel}</p>
+            <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "var(--color-gold)" }}>
+              {timeMode === "month" ? monthLabel : "All Time"}
+            </p>
             <h1 className="text-3xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>History</h1>
           </div>
 
@@ -121,8 +149,25 @@ export default function HistoryPage() {
           </div>
         </div>
 
+        {/* Time mode toggle */}
+        <div className="flex rounded-2xl p-1 gap-1 mb-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          {(["month", "alltime"] as TimeMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handleTimeModeChange(mode)}
+              className="flex-1 py-2 rounded-xl text-xs font-medium tracking-wider uppercase transition-all"
+              style={{
+                background: timeMode === mode ? "var(--color-green)" : "transparent",
+                color: timeMode === mode ? "var(--color-gold)" : "var(--color-text-muted)",
+              }}
+            >
+              {mode === "month" ? "This Month" : "All Time"}
+            </button>
+          ))}
+        </div>
+
         <p className="text-xs mb-6" style={{ color: "var(--color-text-faint)" }}>
-          {isLoggedIn ? `${sorted.length} scan${sorted.length !== 1 ? "s" : ""} this month` : ""}
+          {isLoggedIn ? `${sorted.length} scan${sorted.length !== 1 ? "s" : ""} ${timeMode === "month" ? "this month" : "total"}` : ""}
         </p>
 
         {!isLoggedIn ? (
@@ -133,7 +178,7 @@ export default function HistoryPage() {
             </button>
           </div>
         ) : sorted.length === 0 ? (
-          <EmptyState onScan={() => router.push("/scan")} />
+          <EmptyState onScan={() => router.push("/scan")} allTime={timeMode === "alltime"} />
         ) : (
           <div className="flex flex-col gap-3">
             {sorted.map((scan) => (
