@@ -5,7 +5,27 @@ import { supabase } from "@/lib/supabase";
 import { updateStreak } from "@/lib/streak";
 
 export const maxDuration = 300;
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute window
+  const maxRequests = 5; // max 5 scans per minute per IP
+
+  const record = requestCounts.get(ip);
+
+  if (!record || now > record.resetTime) {
+    requestCounts.set(ip, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (record.count >= maxRequests) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -57,7 +77,13 @@ export async function POST(req: NextRequest) {
         .select("scans_used, is_pro, scans_reset_at")
         .eq("id", userId)
         .single();
-
+        const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+if (!checkRateLimit(ip)) {
+  return NextResponse.json(
+    { error: "Too many requests. Please wait a moment before scanning again." },
+    { status: 429 }
+  );
+}
       if (profile && !profile.is_pro) {
         const now = new Date();
         const resetAt = new Date(profile.scans_reset_at as string);
