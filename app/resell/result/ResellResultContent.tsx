@@ -35,44 +35,40 @@ function StatCard({ label, children }: { label: string; children: React.ReactNod
     </div>
   );
 }
+
 const RESELL_LOADING_MESSAGES = [
-    "Scanning resell markets…",
-    "Identifying item…",
-    "Checking eBay sold listings…",
-    "Comparing platform prices…",
-    "Analyzing market demand…",
-    "Calculating best price…",
-    "Reviewing price history…",
-    "Almost there…",
-  ];
-  
-  function ResellLoadingMessage() {
-    const [index, setIndex] = useState(0);
-    const [visible, setVisible] = useState(true);
-  
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setVisible(false);
-        setTimeout(() => {
-          setIndex((prev) => (prev + 1) % RESELL_LOADING_MESSAGES.length);
-          setVisible(true);
-        }, 300);
-      }, 2000);
-      return () => clearInterval(interval);
-    }, []);
-  
-    return (
-      <p
-        className="text-sm uppercase tracking-widest transition-opacity duration-300"
-        style={{
-          color: "var(--color-gold)",
-          opacity: visible ? 1 : 0,
-        }}
-      >
-        {RESELL_LOADING_MESSAGES[index]}
-      </p>
-    );
-  }
+  "Scanning resell markets…",
+  "Identifying item…",
+  "Checking eBay sold listings…",
+  "Comparing platform prices…",
+  "Analyzing market demand…",
+  "Calculating best price…",
+  "Reviewing price history…",
+  "Almost there…",
+];
+
+function ResellLoadingMessage() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((prev) => (prev + 1) % RESELL_LOADING_MESSAGES.length);
+        setVisible(true);
+      }, 300);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <p className="text-sm uppercase tracking-widest transition-opacity duration-300" style={{ color: "var(--color-gold)", opacity: visible ? 1 : 0 }}>
+      {RESELL_LOADING_MESSAGES[index]}
+    </p>
+  );
+}
+
 export default function ResellResultContent() {
   const router = useRouter();
   const [result, setResult] = useState<any>(null);
@@ -80,6 +76,7 @@ export default function ResellResultContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [preferredPlatform, setPreferredPlatform] = useState("eBay");
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -132,6 +129,28 @@ export default function ResellResultContent() {
     }
     load();
   }, []);
+
+  async function handleShare() {
+    if (!result) return;
+    setIsSharing(true);
+    try {
+      const bestPrice = Number(String(result.bestPrice).replace(/[^0-9.]/g, "")).toLocaleString();
+      if (navigator.share) {
+        await navigator.share({
+          title: `${result.name} — Scanify Resell`,
+          text: `I just scanned a ${result.name} on Scanify — best resell price is $${bestPrice}!`,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        alert("Link copied to clipboard!");
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+    } finally {
+      setIsSharing(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -191,6 +210,16 @@ export default function ResellResultContent() {
                 <p className="text-xl font-bold" style={{ color: "var(--color-gold)" }}>{result.condition}</p>
               </StatCard>
             </div>
+
+            {/* Share button */}
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className="w-full py-3 rounded-2xl font-semibold text-sm tracking-wider uppercase transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-gold)", color: "var(--color-gold)" }}
+            >
+              {isSharing ? "Sharing…" : "⬆ Share Result"}
+            </button>
 
             {result.priceHistory?.length > 0 && (
               <div className="rounded-2xl p-4 pt-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
@@ -262,7 +291,7 @@ export default function ResellResultContent() {
         )}
 
         <button onClick={() => router.push("/resell")} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-80" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
-        Resell Another Item
+          Resell Another Item
         </button>
 
       </div>
