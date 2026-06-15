@@ -5,27 +5,23 @@ import { supabase } from "@/lib/supabase";
 import { updateStreak } from "@/lib/streak";
 
 export const maxDuration = 300;
+
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
-  const windowMs = 60 * 1000; // 1 minute window
-  const maxRequests = 5; // max 5 scans per minute per IP
-
+  const windowMs = 60 * 1000;
+  const maxRequests = 5;
   const record = requestCounts.get(ip);
-
   if (!record || now > record.resetTime) {
     requestCounts.set(ip, { count: 1, resetTime: now + windowMs });
     return true;
   }
-
-  if (record.count >= maxRequests) {
-    return false;
-  }
-
+  if (record.count >= maxRequests) return false;
   record.count++;
   return true;
 }
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -71,19 +67,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No image URL provided" }, { status: 400 });
     }
 
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait a moment before scanning again." },
+        { status: 429 }
+      );
+    }
+
     if (userId) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("scans_used, is_pro, scans_reset_at")
         .eq("id", userId)
         .single();
-        const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-if (!checkRateLimit(ip)) {
-  return NextResponse.json(
-    { error: "Too many requests. Please wait a moment before scanning again." },
-    { status: 429 }
-  );
-}
+
       if (profile && !profile.is_pro) {
         const now = new Date();
         const resetAt = new Date(profile.scans_reset_at as string);
@@ -109,93 +107,66 @@ if (!checkRateLimit(ip)) {
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
     const noteHint = note
-      ? `The user says this item is: "${note}". Use this exactly as stated. Do not add variants, trims, or editions not mentioned by the user.`
+      ? `The user has identified this item as: "${note}". Use this name exactly — do not add variants, trims, or editions the user did not mention.`
       : "";
 
-    const systemPrompt = `You are an expert appraiser with deep knowledge of every collectible, luxury, and consumer category. You identify items precisely from images and provide accurate 2026 market valuations.
+    const systemPrompt = `You are the world's most precise AI appraiser. You analyze images of physical objects and return accurate identifications and 2026 market valuations.
 
-Your expertise covers:
-- Exotic and luxury cars (Lamborghini, Ferrari, Koenigsegg, Bugatti, McLaren, Porsche, Rolls-Royce, Bentley, Aston Martin, and all others)
-- Luxury watches (Rolex, Patek Philippe, Audemars Piguet, Richard Mille, and all others)
+You specialize in:
+- Exotic and luxury cars (Lamborghini, Ferrari, Koenigsegg, Bugatti, McLaren, Porsche, Rolls-Royce, Pagani, and all others)
+- Luxury watches (Rolex, Patek Philippe, Audemars Piguet, Richard Mille, Hublot, and all others)
 - Sneakers and streetwear (Nike, Jordan, Adidas, New Balance, and all collaborations)
 - Consumer electronics (Apple, Samsung, Sony, and all others)
-- Designer bags and accessories (Hermès, Louis Vuitton, Chanel, Gucci, and all others)
-- Art, antiques, and collectibles
-- Jewelry and gemstones
-- Musical instruments
-- Sports memorabilia
-- Furniture and home goods
-- Tools, equipment, and machinery
-- Any other physical object that can be bought and sold
+- Designer bags (Hermès, Louis Vuitton, Chanel, Gucci, Bottega Veneta, and all others)
+- Jewelry, art, antiques, collectibles, instruments, memorabilia, furniture, tools, and all other sellable objects
 
-<content_rules>
-Respond with exactly {"error": "inappropriate_content"} if the image contains adult or inappropriate content.
-Respond with exactly {"error": "buildings_not_supported"} if the image shows a building or fixed structure.
-Respond with exactly {"error": "image_unclear"} if the image is too blurry or dark to identify.
-</content_rules>
+CONTENT RULES — respond with exact JSON error if triggered:
+- Adult or inappropriate content: {"error": "inappropriate_content"}
+- Buildings or fixed structures: {"error": "buildings_not_supported"}
+- Image too blurry or dark: {"error": "image_unclear"}
 
-<identification_rules>
-Study every visible detail before naming the item: shape, proportions, badges, logos, model numbers, colorways, materials, condition, and any unique features.
+IDENTIFICATION — be extremely precise:
+Look at every visible detail: body shape, proportions, badges, logos, model numbers, colorways, stitching, hardware, serial numbers, condition, and unique features.
 
-Category-specific identification:
+Cars — critical distinctions you must get right:
+- Lamborghini Revuelto (2023+): long angular body, hybrid V12, vertical Y-shaped LED taillights, Aventador replacement, significantly larger than Huracán
+- Lamborghini Huracán: shorter, rounder, V10, horizontal taillights — never confuse with Revuelto
+- Koenigsegg Regera: smooth flowing body, covered rear wheels, hybrid powertrain, large clamshell
+- Koenigsegg Agera RS: angular body, exposed rear wheels, large fixed wing, twin-turbo V8 — completely different from Regera
+- Ferrari 458 Speciale: fixed rear wing, aero bumpers, Speciale badging — worth significantly more than 458 Italia
+- Always identify carbon fiber aero kits, special edition badges, and unique trim details
 
-CARS: Identify exact make, model, variant, and year. Critical distinctions:
-- Lamborghini Revuelto (2023+): long angular body, hybrid V12, vertical Y-shaped LED taillights, Aventador successor, much larger than Huracán
-- Lamborghini Huracán: compact, rounded, V10, horizontal taillights — completely different from Revuelto
-- Koenigsegg Regera: smooth body, covered rear wheels, hybrid, large clamshell rear
-- Koenigsegg Agera RS: angular, exposed rear wheels, large fixed wing, twin-turbo V8 — completely different from Regera
-- Ferrari 458 Speciale: fixed rear wing, aero bodykit, Speciale badges — worth far more than base 458 Italia
-- Always check for carbon fiber aero parts, special badges, and unique design elements that indicate higher-spec variants
+Watches: brand, exact model, reference number, material, dial color, bezel type
+Sneakers: brand, exact model, colorway name, release year, collaboration
+Electronics: brand, exact model, generation, storage, color
+Bags: brand, model name, size, leather type, color, hardware color
 
-WATCHES: Identify brand, collection, reference number, case material, dial color, and bezel type. A Rolex Submariner Date (126610LN) is different from a no-date Submariner (124060). Reference numbers matter enormously.
+PRICING — use real 2026 secondary market values:
+- Lamborghini Revuelto: $700,000–$950,000
+- Lamborghini Huracán base: $180,000–$220,000
+- Lamborghini Huracán STO: $280,000–$330,000
+- Ferrari 458 Speciale: $380,000–$520,000
+- Ferrari 458 Italia: $180,000–$230,000
+- Koenigsegg Regera: $2,000,000–$3,500,000
+- Koenigsegg Agera RS: $4,000,000–$7,000,000
+- Rolex Submariner Date 126610LN: $13,000–$16,000
+- Patek Philippe Nautilus 5711: $120,000–$180,000
+- Nike Air Jordan 1 Chicago 2015: $1,500–$2,500
+- iPhone 15 Pro Max 256GB used: $700–$900
+- Hermès Birkin 25 Togo: $25,000–$40,000
 
-SNEAKERS: Identify brand, exact model name, colorway, release year, and any collaboration. "Nike Air Jordan 1 Retro High OG Chicago 1985" is completely different from a 2015 rerelease.
+For all other items: sneakers → StockX/GOAT averages. Watches → Chrono24. Cars → private party. Electronics → eBay sold. Art → auction results.
 
-ELECTRONICS: Identify brand, exact model, generation, storage capacity, and color. iPhone 15 Pro Max 256GB is different from iPhone 15 Pro Max 512GB.
-
-DESIGNER BAGS: Identify brand, bag name, size, material, color, and hardware. A Hermès Birkin 25 in Togo leather is different from a Birkin 35 in Epsom.
-
-ALL ITEMS: Never default to a base model when details suggest a higher spec. Be specific, not generic.
-</identification_rules>
-
-<pricing_rules>
-Use real 2026 secondary market prices. Never use retail MSRP unless the item is brand new and only sold at retail.
-
-2026 market reference points:
-- Lamborghini Revuelto: $700,000 – $950,000
-- Lamborghini Huracán base: $180,000 – $220,000
-- Lamborghini Huracán STO: $280,000 – $330,000
-- Ferrari 458 Speciale: $380,000 – $520,000
-- Ferrari 458 Italia: $180,000 – $230,000
-- Koenigsegg Regera: $2,000,000 – $3,500,000
-- Koenigsegg Agera RS: $4,000,000 – $7,000,000
-- Rolex Submariner Date (126610LN): $13,000 – $16,000
-- Patek Philippe Nautilus 5711: $120,000 – $180,000
-- Nike Air Jordan 1 Chicago (2015): $1,500 – $2,500
-- iPhone 15 Pro Max 256GB used: $700 – $900
-- Hermès Birkin 25 Togo: $25,000 – $40,000
-
-For items not listed: use your knowledge of current secondary market values. Sneakers → StockX/GOAT. Watches → Chrono24/WatchBox. Cars → private party sales. Electronics → used eBay sold listings. Art → recent auction results.
-
-Price history should show realistic year-by-year fluctuations from 2020 to 2026 for this specific item.
-</pricing_rules>
-
-Always respond with only a valid JSON object. No explanation, no markdown, no backticks.`;
-
-    const userMessage = noteHint
-      ? `${noteHint}\n\nAnalyze this item and return the JSON.`
-      : "Analyze this item and return the JSON.";
-
-    const jsonSchema = `
+RESPONSE FORMAT — return only valid JSON, no markdown, no explanation:
 {
-  "name": "precise full name — make, model, exact variant, year, edition",
-  "currentValue": "2026 market value as number only, no dollar sign",
-  "originalPrice": "original retail price as number only, no dollar sign",
+  "name": "exact precise name with make, model, variant, year, edition",
+  "currentValue": "2026 market value as number only",
+  "originalPrice": "original retail price as number only",
   "category": "specific product category",
-  "confidence": "confidence as number 0-100",
-  "description": "Three sentences: what makes this specific item special, its market position, and why it has its current value.",
-  "materials": "Three key materials, one per line. Format: Material — how it is used and why.",
-  "specs": "Four key specifications, one per line. Format: Spec name: exact value with units.",
+  "confidence": "0-100 as number only",
+  "description": "Three sentences covering what makes this exact item special, its market position, and current value context.",
+  "materials": "Three materials, one per line. Format: Material — where used and why.",
+  "specs": "Four specs with exact figures, one per line. Format: Spec: value with units.",
   "priceHistory": [
     {"year": "2020", "price": 0},
     {"year": "2021", "price": 0},
@@ -207,7 +178,9 @@ Always respond with only a valid JSON object. No explanation, no markdown, no ba
   ]
 }`;
 
-    const fullUserMessage = `${userMessage}\n\nRespond with this exact JSON structure:\n${jsonSchema}`;
+    const userMessage = noteHint
+      ? `${noteHint}\n\nAnalyze this item and return the JSON.`
+      : "Analyze this item and return the JSON.";
 
     // PRIMARY: GPT-4o (fast + accurate vision)
     try {
@@ -215,25 +188,22 @@ Always respond with only a valid JSON object. No explanation, no markdown, no ba
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         max_tokens: 1000,
-        messages: [{
-          role: "system",
-          content: systemPrompt,
-        }, {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`,
-                detail: "high",
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                  detail: "high",
+                },
               },
-            },
-            {
-              type: "text",
-              text: noteHint || "Analyze this item and return the JSON.",
-            },
-          ],
-        }],
+              { type: "text", text: userMessage },
+            ],
+          },
+        ],
       });
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
@@ -245,7 +215,7 @@ Always respond with only a valid JSON object. No explanation, no markdown, no ba
       console.error("GPT-4o failed:", err?.message);
     }
 
-    // FALLBACK 1: Claude Sonnet 4.6 (more accurate)
+    // FALLBACK 1: Claude Sonnet 4.6
     try {
       console.log("Trying Claude Sonnet 4.6...");
       const response = await anthropic.messages.create({
@@ -263,7 +233,7 @@ Always respond with only a valid JSON object. No explanation, no markdown, no ba
                 data: base64Image,
               },
             },
-            { type: "text", text: fullUserMessage },
+            { type: "text", text: userMessage },
           ],
         }],
       });
@@ -277,34 +247,36 @@ Always respond with only a valid JSON object. No explanation, no markdown, no ba
       console.error("Claude Sonnet failed:", err?.message);
     }
 
-    // FALLBACK 2: OpenAI GPT-4o (last resort)
+    // FALLBACK 2: Claude Haiku 4.5
     try {
-      console.log("Trying OpenAI GPT-4o...");
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      console.log("Trying Claude Haiku 4.5...");
+      const response = await anthropic.messages.create({
+        model: "claude-haiku-4-5",
+        max_tokens: 1000,
+        system: systemPrompt,
         messages: [{
           role: "user",
           content: [
-            { type: "text", text: `${systemPrompt}\n\n${fullUserMessage}` },
             {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`,
-                detail: "high",
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: base64Image,
               },
             },
+            { type: "text", text: userMessage },
           ],
         }],
-        max_tokens: 1000,
       });
-      const text = response.choices[0].message.content?.trim() || "";
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName);
       return NextResponse.json(parsed);
     } catch (err: any) {
-      console.error("OpenAI failed:", err?.message);
+      console.error("Claude Haiku failed:", err?.message);
     }
 
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
