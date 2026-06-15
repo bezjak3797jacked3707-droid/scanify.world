@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { supabase } from "@/lib/supabase";
@@ -22,10 +23,10 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// OPTIMIZATION 2: Background save — don't make user wait for DB write
 function saveResultBackground(parsed: any, imageUrl: string, userId: string | null, displayName: string | null) {
   void supabase.from("scan_results").insert({
     image_url: imageUrl,
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // OPTIMIZATION 3: Run image fetch and limit check in parallel
+    // Parallel image fetch + limit check
     const [imageResponse, profileResult] = await Promise.all([
       fetch(imageUrl),
       userId
@@ -186,10 +187,28 @@ export async function POST(req: NextRequest) {
       ? `${noteHint}\n\nAnalyze this item and return the JSON.`
       : "Analyze this item and return the JSON.";
 
-    // PRIMARY: Claude Sonnet 4.6 with prompt caching
-    // OPTIMIZATION 1: Cache the system prompt — saves 3-5 seconds on subsequent requests
+    const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
+
+    // PRIMARY: Gemini 3.5 Flash (frontier intelligence at Flash speed)
     try {
-      console.log("Trying Claude Sonnet 4.6 with caching...");
+      console.log("Trying Gemini 3.5 Flash...");
+      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+      const result = await model.generateContent([
+        fullPrompt,
+        { inlineData: { mimeType, data: base64Image } },
+      ]);
+      const parsed = parseJSON(result.response.text().trim());
+      const contentError = checkContentErrors(parsed);
+      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+      saveResultBackground(parsed, imageUrl, userId, displayName);
+      return NextResponse.json(parsed);
+    } catch (err: any) {
+      console.error("Gemini 3.5 Flash failed:", err?.message);
+    }
+
+    // FALLBACK 1: Claude Sonnet 4.6 with caching
+    try {
+      console.log("Trying Claude Sonnet 4.6...");
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 1000,
@@ -223,44 +242,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Claude Sonnet failed:", err?.message);
-    }
-
-    // FALLBACK 1: Claude Haiku 4.5 with caching
-    try {
-      console.log("Trying Claude Haiku 4.5...");
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 1000,
-        system: [
-          {
-            type: "text",
-            text: systemPrompt,
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                data: base64Image,
-              },
-            },
-            { type: "text", text: userMessage },
-          ],
-        }],
-      });
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const parsed = parseJSON(text);
-      const contentError = checkContentErrors(parsed);
-      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      saveResultBackground(parsed, imageUrl, userId, displayName);
-      return NextResponse.json(parsed);
-    } catch (err: any) {
-      console.error("Claude Haiku failed:", err?.message);
     }
 
     // FALLBACK 2: GPT-4o
