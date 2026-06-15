@@ -209,36 +209,40 @@ Always respond with only a valid JSON object. No explanation, no markdown, no ba
 
     const fullUserMessage = `${userMessage}\n\nRespond with this exact JSON structure:\n${jsonSchema}`;
 
-    // PRIMARY: Claude Haiku 4.5 (fastest)
+    // PRIMARY: GPT-4o (fast + accurate vision)
     try {
-      console.log("Trying Claude Haiku 4.5...");
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
+      console.log("Trying GPT-4o...");
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
         max_tokens: 1000,
-        system: systemPrompt,
         messages: [{
+          role: "system",
+          content: systemPrompt,
+        }, {
           role: "user",
           content: [
             {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                data: base64Image,
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${base64Image}`,
+                detail: "high",
               },
             },
-            { type: "text", text: fullUserMessage },
+            {
+              type: "text",
+              text: noteHint || "Analyze this item and return the JSON.",
+            },
           ],
         }],
       });
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName);
       return NextResponse.json(parsed);
     } catch (err: any) {
-      console.error("Claude Haiku failed:", err?.message);
+      console.error("GPT-4o failed:", err?.message);
     }
 
     // FALLBACK 1: Claude Sonnet 4.6 (more accurate)
