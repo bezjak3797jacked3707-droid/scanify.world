@@ -189,37 +189,21 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
 
-    // PRIMARY: GPT-5.4 mini (fast + near-flagship intelligence)
+    // PRIMARY: Gemini 3.1 Flash-Lite (2.5x faster than 2.5 Flash, same quality)
 try {
-  console.log("Trying GPT-5.4 mini...");
-  const response = await openai.chat.completions.create({
-    model: "gpt-5.4-mini",
-    max_tokens: 1000,
-    messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: [
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:${mimeType};base64,${base64Image}`,
-              detail: "high",
-            },
-          },
-          { type: "text", text: userMessage },
-        ],
-      },
-    ],
-  });
-  const text = response.choices[0].message.content?.trim() || "";
-  const parsed = parseJSON(text);
+  console.log("Trying Gemini 3.1 Flash-Lite...");
+  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+  const result = await model.generateContent([
+    fullPrompt,
+    { inlineData: { mimeType, data: base64Image } },
+  ]);
+  const parsed = parseJSON(result.response.text().trim());
   const contentError = checkContentErrors(parsed);
   if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
   saveResultBackground(parsed, imageUrl, userId, displayName);
   return NextResponse.json(parsed);
 } catch (err: any) {
-  console.error("GPT-5.4 mini failed:", err?.message);
+  console.error("Gemini 3.1 Flash-Lite failed:", err?.message);
 }
 
     // FALLBACK 1: Claude Sonnet 4.6 with caching
