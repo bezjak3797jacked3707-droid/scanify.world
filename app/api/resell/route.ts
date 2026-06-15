@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
@@ -6,6 +7,7 @@ import { updateStreak } from "@/lib/streak";
 
 export const maxDuration = 300;
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -30,8 +32,8 @@ function parseJSON(text: string) {
   return JSON.parse(clean);
 }
 
-async function saveResellResult(parsed: any, imageUrl: string, userId: string) {
-  await supabase.from("scan_results").insert({
+function saveResellBackground(parsed: any, imageUrl: string, userId: string) {
+  void supabase.from("scan_results").insert({
     image_url: imageUrl,
     name: parsed.name,
     current_value: parsed.bestPrice,
@@ -48,18 +50,19 @@ async function saveResellResult(parsed: any, imageUrl: string, userId: string) {
     scan_type: "resell",
   });
 
-  const { data: current } = await supabase
+  void supabase
     .from("profiles")
     .select("resell_scans_used")
     .eq("id", userId)
-    .single();
+    .single()
+    .then(({ data: current }) => {
+      void supabase
+        .from("profiles")
+        .update({ resell_scans_used: (current?.resell_scans_used || 0) + 1 })
+        .eq("id", userId);
+    });
 
-  await supabase
-    .from("profiles")
-    .update({ resell_scans_used: (current?.resell_scans_used || 0) + 1 })
-    .eq("id", userId);
-
-  await updateStreak(userId);
+  void updateStreak(userId);
 }
 
 export async function POST(req: NextRequest) {
@@ -78,14 +81,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (userId) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("resell_scans_used, is_pro, scans_reset_at")
-        .eq("id", userId)
-        .single();
+    // Parallel image fetch + limit check
+    const [imageResponse, profileResult] = await Promise.all([
+      fetch(imageUrl),
+      userId
+        ? supabase.from("profiles").select("resell_scans_used, is_pro, scans_reset_at").eq("id", userId).single()
+        : Promise.resolve({ data: null }),
+    ]);
 
-      if (profile && !profile.is_pro) {
+    if (userId && profileResult.data) {
+      const profile = profileResult.data;
+      if (!profile.is_pro) {
         const now = new Date();
         const resetAt = new Date(profile.scans_reset_at as string);
         const isNewMonth = now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
@@ -104,7 +110,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const imageResponse = await fetch(imageUrl);
     const imageBuffer = await imageResponse.arrayBuffer();
     const base64Image = Buffer.from(imageBuffer).toString("base64");
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
@@ -127,13 +132,12 @@ Your expertise covers all resellable categories:
 - Musical instruments and equipment
 - Sports equipment and gear
 
-<content_rules>
+CONTENT RULES:
 Respond with exactly {"error": "inappropriate_content"} for adult or inappropriate content.
 Respond with exactly {"error": "buildings_not_supported"} for buildings or fixed structures.
 Respond with exactly {"error": "image_unclear"} if the image is too blurry or dark to identify.
-</content_rules>
 
-<identification>
+IDENTIFICATION:
 Examine every visible detail: brand logos, model numbers, colorways, condition, wear patterns, tags, packaging, accessories. Identify the most specific version of the item possible.
 
 For sneakers: exact colorway, release year, size if visible.
@@ -144,27 +148,25 @@ For cars: make, model, year, trim, condition, mileage estimate.
 For collectibles: edition, year, grade/condition, packaging.
 
 Assess condition carefully — scratches, wear, missing parts, and original packaging all affect resell value significantly.
-</identification>
 
-<pricing>
+PRICING:
 Use real 2026 secondary market prices. Research what items actually sell for, not what they are listed for.
 
 quickSalePrice: 10-20% below market average — priced to sell within 24-48 hours.
 bestPrice: 5-10% above market average — for a patient seller willing to wait 2-4 weeks.
 
-Platform-specific pricing:
-- eBay: nationwide audience, buyers pay premium for rare/graded items, fees ~13%
-- Facebook Marketplace: local buyers, cash deals, no fees, expect 10-20% below eBay
-- Craigslist: similar to Facebook, cash only, safety concerns lower demand
-- StockX/GOAT: authentication required, premium prices for verified items
-- Depop/Vinted: younger audience, fashion-forward items perform well
-- Chrono24: watch specialists, informed buyers, strong prices for quality pieces
-- Blocket: Swedish market, adjust prices for local demand
+Platform pricing:
+- eBay: nationwide audience, fees ~13%, premium for rare items
+- Facebook Marketplace: local buyers, no fees, 10-20% below eBay
+- Craigslist: cash only, similar to Facebook
+- StockX/GOAT: authentication required, premium prices
+- Depop/Vinted: younger audience, fashion items perform well
+- Chrono24: watch specialists, strong prices
+- Blocket: Swedish market, local demand
 
 highestSold: realistic top 10% of recent sales.
 lowestSold: realistic bottom 10% of recent sales.
 Price history should reflect actual year-by-year market movement from 2020 to 2026.
-</pricing>
 
 Always respond with only valid JSON. No explanation, no markdown, no backticks.`;
 
@@ -228,35 +230,22 @@ Always respond with only valid JSON. No explanation, no markdown, no backticks.`
   "bestTimeToSell": "specific timing advice based on market trends and seasonality for this item"
 }`;
 
-    // PRIMARY: Claude Haiku 4.5 (fast)
+    const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
+
+    // PRIMARY: Gemini 3.1 Flash-Lite (sub 6 second scans)
     try {
-      console.log("Resell: Trying Claude Haiku 4.5...");
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 1200,
-        system: systemPrompt,
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                data: base64Image,
-              },
-            },
-            { type: "text", text: userMessage },
-          ],
-        }],
-      });
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const parsed = parseJSON(text);
+      console.log("Resell: Trying Gemini 3.1 Flash-Lite...");
+      const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+      const result = await model.generateContent([
+        fullPrompt,
+        { inlineData: { mimeType, data: base64Image } },
+      ]);
+      const parsed = parseJSON(result.response.text().trim());
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) await saveResellResult(parsed, imageUrl, userId);
+      if (userId) saveResellBackground(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
-      console.error("Resell Haiku failed:", err?.message);
+      console.error("Resell Gemini failed:", err?.message);
     }
 
     // FALLBACK 1: Claude Sonnet 4.6
@@ -284,21 +273,25 @@ Always respond with only valid JSON. No explanation, no markdown, no backticks.`
       const text = response.content[0].type === "text" ? response.content[0].text : "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) await saveResellResult(parsed, imageUrl, userId);
+      if (userId) saveResellBackground(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell Sonnet failed:", err?.message);
     }
 
-    // FALLBACK 2: OpenAI GPT-4o
+    // FALLBACK 2: GPT-4o
     try {
-      console.log("Resell: Trying OpenAI...");
+      console.log("Resell: Trying GPT-4o...");
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
+        max_tokens: 1200,
         messages: [{
+          role: "system",
+          content: systemPrompt,
+        }, {
           role: "user",
           content: [
-            { type: "text", text: `${systemPrompt}\n\n${userMessage}` },
+            { type: "text", text: userMessage },
             {
               type: "image_url",
               image_url: {
@@ -308,15 +301,14 @@ Always respond with only valid JSON. No explanation, no markdown, no backticks.`
             },
           ],
         }],
-        max_tokens: 1200,
       });
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) await saveResellResult(parsed, imageUrl, userId);
+      if (userId) saveResellBackground(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
-      console.error("Resell OpenAI failed:", err?.message);
+      console.error("Resell GPT-4o failed:", err?.message);
     }
 
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
