@@ -27,8 +27,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-function saveResultBackground(parsed: any, imageUrl: string, userId: string | null, displayName: string | null) {
-  void supabase.from("scan_results").insert({
+async function saveResult(parsed: any, imageUrl: string, userId: string | null, displayName: string | null) {
+  const { error: dbError } = await supabase.from("scan_results").insert({
     image_url: imageUrl,
     name: parsed.name,
     current_value: parsed.currentValue,
@@ -42,10 +42,10 @@ function saveResultBackground(parsed: any, imageUrl: string, userId: string | nu
     full_result: parsed,
     display_name: displayName || "Anonymous",
   });
-
+  if (dbError) console.error("DB save error:", dbError.message);
   if (userId) {
-    void supabase.rpc("increment_scans", { user_id_input: userId })
-      .then(() => updateStreak(userId));
+    await supabase.rpc("increment_scans", { user_id_input: userId });
+    await updateStreak(userId);
   }
 }
 
@@ -189,24 +189,24 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
 
-    // PRIMARY: Gemini 3.1 Flash-Lite (2.5x faster than 2.5 Flash, same quality)
-try {
-  console.log("Trying Gemini 3.1 Flash-Lite...");
-  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-  const result = await model.generateContent([
-    fullPrompt,
-    { inlineData: { mimeType, data: base64Image } },
-  ]);
-  const parsed = parseJSON(result.response.text().trim());
-  const contentError = checkContentErrors(parsed);
-  if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-  saveResultBackground(parsed, imageUrl, userId, displayName);
-  return NextResponse.json(parsed);
-} catch (err: any) {
-  console.error("Gemini 3.1 Flash-Lite failed:", err?.message);
-}
+    // PRIMARY: Gemini 3.1 Flash-Lite
+    try {
+      console.log("Trying Gemini 3.1 Flash-Lite...");
+      const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+      const result = await model.generateContent([
+        fullPrompt,
+        { inlineData: { mimeType, data: base64Image } },
+      ]);
+      const parsed = parseJSON(result.response.text().trim());
+      const contentError = checkContentErrors(parsed);
+      if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+      await saveResult(parsed, imageUrl, userId, displayName);
+      return NextResponse.json(parsed);
+    } catch (err: any) {
+      console.error("Gemini 3.1 Flash-Lite failed:", err?.message);
+    }
 
-    // FALLBACK 1: Claude Sonnet 4.6 with caching
+    // FALLBACK 1: Claude Sonnet 4.6
     try {
       console.log("Trying Claude Sonnet 4.6...");
       const response = await anthropic.messages.create({
@@ -238,7 +238,7 @@ try {
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      saveResultBackground(parsed, imageUrl, userId, displayName);
+      await saveResult(parsed, imageUrl, userId, displayName);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Claude Sonnet failed:", err?.message);
@@ -271,7 +271,7 @@ try {
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      saveResultBackground(parsed, imageUrl, userId, displayName);
+      await saveResult(parsed, imageUrl, userId, displayName);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("GPT-4o failed:", err?.message);

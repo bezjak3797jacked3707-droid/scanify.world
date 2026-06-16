@@ -32,8 +32,8 @@ function parseJSON(text: string) {
   return JSON.parse(clean);
 }
 
-function saveResellBackground(parsed: any, imageUrl: string, userId: string) {
-  void supabase.from("scan_results").insert({
+async function saveResellResult(parsed: any, imageUrl: string, userId: string) {
+  await supabase.from("scan_results").insert({
     image_url: imageUrl,
     name: parsed.name,
     current_value: parsed.bestPrice,
@@ -50,19 +50,18 @@ function saveResellBackground(parsed: any, imageUrl: string, userId: string) {
     scan_type: "resell",
   });
 
-  void supabase
+  const { data: current } = await supabase
     .from("profiles")
     .select("resell_scans_used")
     .eq("id", userId)
-    .single()
-    .then(({ data: current }) => {
-      void supabase
-        .from("profiles")
-        .update({ resell_scans_used: (current?.resell_scans_used || 0) + 1 })
-        .eq("id", userId);
-    });
+    .single();
 
-  void updateStreak(userId);
+  await supabase
+    .from("profiles")
+    .update({ resell_scans_used: (current?.resell_scans_used || 0) + 1 })
+    .eq("id", userId);
+
+  await updateStreak(userId);
 }
 
 export async function POST(req: NextRequest) {
@@ -232,7 +231,7 @@ Always respond with only valid JSON. No explanation, no markdown, no backticks.`
 
     const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
 
-    // PRIMARY: Gemini 3.1 Flash-Lite (sub 6 second scans)
+    // PRIMARY: Gemini 3.1 Flash-Lite
     try {
       console.log("Resell: Trying Gemini 3.1 Flash-Lite...");
       const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
@@ -242,7 +241,7 @@ Always respond with only valid JSON. No explanation, no markdown, no backticks.`
       ]);
       const parsed = parseJSON(result.response.text().trim());
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) saveResellBackground(parsed, imageUrl, userId);
+      if (userId) await saveResellResult(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell Gemini failed:", err?.message);
@@ -273,7 +272,7 @@ Always respond with only valid JSON. No explanation, no markdown, no backticks.`
       const text = response.content[0].type === "text" ? response.content[0].text : "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) saveResellBackground(parsed, imageUrl, userId);
+      if (userId) await saveResellResult(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell Sonnet failed:", err?.message);
@@ -305,7 +304,7 @@ Always respond with only valid JSON. No explanation, no markdown, no backticks.`
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
-      if (userId) saveResellBackground(parsed, imageUrl, userId);
+      if (userId) await saveResellResult(parsed, imageUrl, userId);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Resell GPT-4o failed:", err?.message);
