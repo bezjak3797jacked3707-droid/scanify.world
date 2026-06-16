@@ -17,6 +17,7 @@ function slotIndex(pathname: string) {
   if (pathname === "/scan")    return 2;
   if (pathname === "/resell")  return 3;
   if (pathname === "/history") return 4;
+  if (pathname === "/profile") return 0;
   return -1;
 }
 
