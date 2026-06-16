@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { vibrate } from "@/lib/haptics";
 import type { User } from "@supabase/supabase-js";
 
 const PLATFORMS = [
@@ -53,6 +52,8 @@ export default function ResellPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [preferredPlatform, setPreferredPlatform] = useState("eBay");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [isPreUploading, setIsPreUploading] = useState(false);
   const [error, setError] = useState("");
 
   const scanLimit = 1;
@@ -61,9 +62,9 @@ export default function ResellPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase.from("profiles").select("scans_used, is_pro").eq("id", session.user.id).single()
+        supabase.from("profiles").select("resell_scans_used, is_pro").eq("id", session.user.id).single()
           .then(({ data }) => {
-            if (data) { setScansUsed(data.scans_used); setIsPro(data.is_pro); }
+            if (data) { setScansUsed(data.resell_scans_used || 0); setIsPro(data.is_pro); }
           });
       }
     });
@@ -71,28 +72,59 @@ export default function ResellPage() {
 
   const limitReached = !isPro && scansUsed >= scanLimit;
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
     if (!selected) return;
+
+    setUploadedUrl(null);
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
     setError("");
     e.target.value = "";
+
+    // Pre-upload in background immediately
+    setIsPreUploading(true);
+    try {
+      const compressed = await compressImage(selected);
+      const fileName = `${Date.now()}.jpg`;
+      const filePath = `uploads/resell_${fileName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("scans")
+        .upload(filePath, compressed, { cacheControl: "3600", upsert: false });
+
+      if (!uploadError) {
+        const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
+        setUploadedUrl(data.publicUrl);
+      }
+    } catch (err) {
+      // Silent fail — handleResellScan will retry
+    } finally {
+      setIsPreUploading(false);
+    }
   }
 
   async function handleResellScan() {
     if (!file || !user) return;
-    vibrate(20);
     setIsUploading(true);
     setError("");
+
     try {
-      const compressed = await compressImage(file);
-      const fileName = `${Date.now()}.jpg`;
-      const filePath = `uploads/resell_${fileName}`;
-      const { error: uploadError } = await supabase.storage.from("scans").upload(filePath, compressed, { cacheControl: "3600", upsert: false });
-      if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
-      router.push(`/resell/result?imageUrl=${encodeURIComponent(data.publicUrl)}&userId=${user.id}&platform=${encodeURIComponent(preferredPlatform)}`);
+      let publicUrl = uploadedUrl;
+
+      // If pre-upload didn't finish, upload now
+      if (!publicUrl) {
+        const compressed = await compressImage(file);
+        const fileName = `${Date.now()}.jpg`;
+        const filePath = `uploads/resell_${fileName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("scans")
+          .upload(filePath, compressed, { cacheControl: "3600", upsert: false });
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from("scans").getPublicUrl(filePath);
+        publicUrl = data.publicUrl;
+      }
+
+      router.push(`/resell/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user.id}&platform=${encodeURIComponent(preferredPlatform)}`);
     } catch (err) {
       setError("Upload failed. Please try again.");
       setIsUploading(false);
@@ -148,7 +180,7 @@ export default function ResellPage() {
 
         {!preview ? (
           <div
-            onClick={() => { if (!limitReached) { vibrate(); fileInputRef.current?.click(); } }}
+            onClick={() => { if (!limitReached) fileInputRef.current?.click(); }}
             className="w-full rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
             style={{ background: "var(--color-surface)", border: "2px dashed var(--color-border)", minHeight: 180, opacity: limitReached ? 0.5 : 1 }}
           >
@@ -172,9 +204,21 @@ export default function ResellPage() {
             <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden">
               <img src={preview} alt="Item to resell" className="w-full h-full object-cover" />
             </div>
-            <button onClick={() => { setPreview(null); setFile(null); }} className="text-xs uppercase tracking-widest block ml-auto transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
-              Retake photo
-            </button>
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => { setPreview(null); setFile(null); setUploadedUrl(null); }}
+                className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70"
+                style={{ color: "var(--color-gold)" }}
+              >
+                Retake photo
+              </button>
+              {isPreUploading && (
+                <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>Preparing…</p>
+              )}
+              {uploadedUrl && !isPreUploading && (
+                <p className="text-xs" style={{ color: "#00C853" }}>✓ Ready</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -189,7 +233,12 @@ export default function ResellPage() {
         )}
 
         {preview && !limitReached && (
-          <button onClick={handleResellScan} disabled={isUploading} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity disabled:opacity-50" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
+          <button
+            onClick={handleResellScan}
+            disabled={isUploading}
+            className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity disabled:opacity-50"
+            style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+          >
             {isUploading ? "Preparing…" : "Get Resell Value"}
           </button>
         )}
