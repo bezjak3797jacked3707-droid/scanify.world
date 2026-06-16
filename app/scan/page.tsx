@@ -203,7 +203,7 @@ export default function ScanPage() {
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Tell us about this item (optional)"
+            placeholder="Name the item for better accuracy (optional)"
             rows={3}
             className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
