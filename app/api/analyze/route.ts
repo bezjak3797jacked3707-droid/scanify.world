@@ -82,8 +82,11 @@ Look at every visible detail: body shape, proportions, badges, logos, model numb
 Cars — critical distinctions you must get right:
 - Lamborghini Revuelto (2023+): long angular body, hybrid V12, vertical Y-shaped LED taillights, Aventador replacement, significantly larger than Huracán
 - Lamborghini Huracán: shorter, rounder, V10, horizontal taillights — never confuse with Revuelto
-- Koenigsegg Regera: smooth flowing body, covered rear wheels, hybrid powertrain, large clamshell
+- Koenigsegg Regera: smooth flowing body, covered rear wheels, hybrid powertrain, large clamshell rear
 - Koenigsegg Agera RS: angular body, exposed rear wheels, large fixed wing, twin-turbo V8 — completely different from Regera
+- Koenigsegg Gemera: Koenigsegg's ONLY four-seater, long sleek body, no B-pillar, dihedral doors, hybrid V8+electric powertrain, 2300hp, seats 4 adults — worth $1,900,000+ in 2026
+- Kimera K39 (2026): Italian hypercar, carbon monocoque, Koenigsegg-sourced 5.0L twin-turbo V8, 972hp, pop-up headlights, massive rear wing, 1980s endurance racing inspired design, only ~50 units — worth $2,700,000
+- Brabus Bodo (2026): coachbuilt hyper-GT based on Aston Martin Vanquish, entirely new carbon fiber body, 5.2L twin-turbo V12, 1000hp, extremely low 130cm tall, boat-tail rear, 77 units worldwide — worth $1,200,000–$1,700,000
 - Ferrari 458 Speciale: fixed rear wing, aero bumpers, Speciale badging — worth significantly more than 458 Italia
 - Always identify carbon fiber aero kits, special edition badges, and unique trim details
 
@@ -100,7 +103,9 @@ PRICING — use real 2026 secondary market values:
 - Ferrari 458 Italia: $180,000–$230,000
 - Koenigsegg Regera: $2,000,000–$3,500,000
 - Koenigsegg Agera RS: $4,000,000–$7,000,000
-- Rolex Submariner Date 126610LN: $13,000–$16,000
+- Koenigsegg Gemera: $1,900,000–$2,500,000
+- Kimera K39: $2,500,000–$3,000,000
+- Brabus Bodo: $1,200,000–$1,700,000- Rolex Submariner Date 126610LN: $13,000–$16,000
 - Patek Philippe Nautilus 5711: $120,000–$180,000
 - Nike Air Jordan 1 Chicago 2015: $1,500–$2,500
 - iPhone 15 Pro Max 256GB used: $700–$900
