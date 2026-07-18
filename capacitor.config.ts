@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Scanify',
   webDir: 'public',
   server: {
-    url: 'https://scanify.world',
+    url: 'https://www.scanify.world',
     cleartext: false,
   },
 };
