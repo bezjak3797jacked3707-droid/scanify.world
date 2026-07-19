@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
+import { Browser } from "@capacitor/browser";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
@@ -16,21 +19,53 @@ export default function AuthButton() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session && Capacitor.isNativePlatform()) {
+        Browser.close().catch(() => {});
+      }
     });
 
-    return () => subscription.unsubscribe();
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener("appUrlOpen", async (data) => {
+        const url = data.url;
+        if (url.includes("access_token") || url.includes("code=")) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          setUser(sessionData.session?.user ?? null);
+          await Browser.close().catch(() => {});
+        }
+      });
+    }
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function handleGoogleLogin() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `https://www.scanify.world/auth/callback`,
-        queryParams: {
-          prompt: "select_account",
+    if (Capacitor.isNativePlatform()) {
+      const { data } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `world.scanify.app://auth/callback`,
+          queryParams: {
+            prompt: "select_account",
+          },
+          skipBrowserRedirect: true,
         },
-      },
-    });
+      });
+      if (data.url) {
+        await Browser.open({ url: data.url });
+      }
+    } else {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `https://www.scanify.world/auth/callback`,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+    }
   }
 
   async function handleLogout() {
@@ -42,14 +77,14 @@ export default function AuthButton() {
   if (user) {
     return (
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = "/profile"}>
-  <img
-    src={user.user_metadata?.avatar_url || "/default-avatar.png"}
-    alt="Profile"
-    className="w-8 h-8 rounded-full border border-[#C9A84C]"
-    style={{ boxShadow: "0 0 12px rgba(201,168,76,0.4), 0 0 24px rgba(201,168,76,0.15)" }}
-  />
-  <span className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Profile</span>
-</div>
+        <img
+          src={user.user_metadata?.avatar_url || "/default-avatar.png"}
+          alt="Profile"
+          className="w-8 h-8 rounded-full border border-[#C9A84C]"
+          style={{ boxShadow: "0 0 12px rgba(201,168,76,0.4), 0 0 24px rgba(201,168,76,0.15)" }}
+        />
+        <span className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Profile</span>
+      </div>
     );
   }
 
