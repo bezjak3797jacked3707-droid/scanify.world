@@ -19,24 +19,35 @@ export default function AuthButton() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session && Capacitor.isNativePlatform()) {
-        Browser.close().catch(() => {});
-      }
     });
+
+    let urlListener: { remove: () => void } | undefined;
 
     if (Capacitor.isNativePlatform()) {
       CapacitorApp.addListener("appUrlOpen", async (data) => {
         const url = data.url;
-        if (url.includes("access_token") || url.includes("code=")) {
-          const { data: sessionData } = await supabase.auth.getSession();
-          setUser(sessionData.session?.user ?? null);
+        if (url.includes("code=")) {
+          const codeMatch = url.match(/[?&]code=([^&]+)/);
+          const code = codeMatch ? decodeURIComponent(codeMatch[1]) : null;
+          if (code) {
+            try {
+              await supabase.auth.exchangeCodeForSession(code);
+              const { data: sessionData } = await supabase.auth.getSession();
+              setUser(sessionData.session?.user ?? null);
+            } catch (err) {
+              console.error("Auth exchange failed:", err);
+            }
+          }
           await Browser.close().catch(() => {});
         }
+      }).then((listener) => {
+        urlListener = listener;
       });
     }
 
     return () => {
       subscription.unsubscribe();
+      urlListener?.remove();
     };
   }, []);
 
