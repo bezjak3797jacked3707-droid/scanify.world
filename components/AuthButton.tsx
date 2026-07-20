@@ -81,9 +81,6 @@ export default function AuthButton() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    if (typeof window !== "undefined") {
-      localStorage.clear();
-    }
   }
 
   if (loading) return null;
