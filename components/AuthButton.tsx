@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
-import { Browser } from "@capacitor/browser";
-import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
+import { generateNonce, sha256Hash } from "@/lib/nonce";
 
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
@@ -21,50 +20,50 @@ export default function AuthButton() {
       setUser(session?.user ?? null);
     });
 
-    let urlListener: { remove: () => void } | undefined;
-
     if (Capacitor.isNativePlatform()) {
-      CapacitorApp.addListener("appUrlOpen", async (data) => {
-        const url = data.url;
-        if (url.includes("code=")) {
-          const codeMatch = url.match(/[?&]code=([^&]+)/);
-          const code = codeMatch ? decodeURIComponent(codeMatch[1]) : null;
-          if (code) {
-            try {
-              await supabase.auth.exchangeCodeForSession(code);
-              const { data: sessionData } = await supabase.auth.getSession();
-              setUser(sessionData.session?.user ?? null);
-            } catch (err) {
-              console.error("Auth exchange failed:", err);
-            }
-          }
-          await Browser.close().catch(() => {});
-        }
-      }).then((listener) => {
-        urlListener = listener;
+      import("@capgo/capacitor-social-login").then(({ SocialLogin }) => {
+        SocialLogin.initialize({
+          google: {
+            iOSClientId: "331795866866-p13hvpk792sn2qihd0bcp94j0c9dhscn.apps.googleusercontent.com",
+          },
+        });
       });
     }
 
     return () => {
       subscription.unsubscribe();
-      urlListener?.remove();
     };
   }, []);
 
   async function handleGoogleLogin() {
+    console.log("isNativePlatform check:", Capacitor.isNativePlatform());
     if (Capacitor.isNativePlatform()) {
-      const { data } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `world.scanify.app://auth/callback`,
-          queryParams: {
-            prompt: "select_account",
+      try {
+        const { SocialLogin } = await import("@capgo/capacitor-social-login");
+        const rawNonce = generateNonce();
+        const hashedNonce = await sha256Hash(rawNonce);
+
+        const result = await SocialLogin.login({
+          provider: "google",
+          options: {
+            nonce: hashedNonce,
           },
-          skipBrowserRedirect: true,
-        },
-      });
-      if (data.url) {
-        await Browser.open({ url: data.url });
+        });
+
+        const idToken = (result.result as any)?.idToken;
+
+        if (idToken) {
+          const { error } = await supabase.auth.signInWithIdToken({
+            provider: "google",
+            token: idToken,
+            nonce: rawNonce,
+          });
+          if (error) {
+            console.error("Supabase sign in error:", error.message);
+          }
+        }
+      } catch (err) {
+        console.error("Native Google login failed:", err);
       }
     } else {
       await supabase.auth.signInWithOAuth({
