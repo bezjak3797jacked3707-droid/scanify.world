@@ -40,23 +40,17 @@ export default function AuthButton() {
     if (Capacitor.isNativePlatform()) {
       try {
         const { SocialLogin } = await import("@capgo/capacitor-social-login");
-        const rawNonce = generateNonce();
-        const hashedNonce = await sha256Hash(rawNonce);
-
         const result = await SocialLogin.login({
           provider: "google",
-          options: {
-            nonce: hashedNonce,
-          },
+          options: {},
         });
-
+        
         const idToken = (result.result as any)?.idToken;
-
+        
         if (idToken) {
           const { error } = await supabase.auth.signInWithIdToken({
             provider: "google",
             token: idToken,
-            nonce: rawNonce,
           });
           if (error) {
             console.error("Supabase sign in error:", error.message);
