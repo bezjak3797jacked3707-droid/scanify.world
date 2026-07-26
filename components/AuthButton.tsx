@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
-import { generateNonce, sha256Hash } from "@/lib/nonce";
 
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
@@ -36,7 +35,6 @@ export default function AuthButton() {
   }, []);
 
   async function handleGoogleLogin() {
-    console.log("isNativePlatform check:", Capacitor.isNativePlatform());
     if (Capacitor.isNativePlatform()) {
       try {
         const { SocialLogin } = await import("@capgo/capacitor-social-login");
@@ -44,9 +42,9 @@ export default function AuthButton() {
           provider: "google",
           options: {},
         });
-        
+
         const idToken = (result.result as any)?.idToken;
-        
+
         if (idToken) {
           const { error } = await supabase.auth.signInWithIdToken({
             provider: "google",
