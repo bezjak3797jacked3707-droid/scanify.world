@@ -72,6 +72,14 @@ export default function AuthButton() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { SocialLogin } = await import("@capgo/capacitor-social-login");
+        await SocialLogin.logout({ provider: "google" });
+      } catch (err) {
+        console.error("Native logout failed:", err);
+      }
+    }
   }
 
   if (loading) return null;
