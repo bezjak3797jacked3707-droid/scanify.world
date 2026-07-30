@@ -53,6 +53,8 @@ export default function ProfilePage() {
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [categoryData, setCategoryData] = useState<CategorySlice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -98,6 +100,28 @@ export default function ProfilePage() {
     const res = await fetch("/api/portal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userEmail: user?.email }) });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
+  }
+
+  async function handleDeleteAccount() {
+    if (!user) return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      if (res.ok) {
+        await supabase.auth.signOut();
+        router.push("/");
+      } else {
+        alert("Failed to delete account. Please try again or contact support.");
+        setDeleting(false);
+      }
+    } catch {
+      alert("Failed to delete account. Please try again or contact support.");
+      setDeleting(false);
+    }
   }
 
   if (loading) {
@@ -258,6 +282,25 @@ export default function ProfilePage() {
         <button onClick={handleSignOut} className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
           Sign Out
         </button>
+
+        {!showDeleteConfirm ? (
+          <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70" style={{ border: "1px solid #EF4444", color: "#EF4444" }}>
+            Delete Account
+          </button>
+        ) : (
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: "var(--color-surface)", border: "1px solid #EF4444" }}>
+            <p className="text-sm font-semibold text-center" style={{ color: "#EF4444" }}>Delete your account permanently?</p>
+            <p className="text-xs text-center" style={{ color: "var(--color-text-muted)" }}>This removes all your scans, history, and data. This cannot be undone.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}>
+                Cancel
+              </button>
+              <button onClick={handleDeleteAccount} disabled={deleting} className="flex-1 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider disabled:opacity-50" style={{ background: "#EF4444", color: "white" }}>
+                {deleting ? "Deleting…" : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </main>
