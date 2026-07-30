@@ -240,7 +240,7 @@ export default function Home() {
       </section>
 
       {/* CONTACT */}
-      <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
+<section id="contact" className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
         <h2 className="text-2xl text-center mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
           Get in Touch
         </h2>
