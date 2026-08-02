@@ -198,13 +198,13 @@ export default function RankPage() {
                       ${Number(String(entry.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
                     </p>
                     {isOwn ? (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRemoveFromLeaderboard(entry.id); }}
-                        className="text-xs uppercase tracking-wider transition-opacity hover:opacity-70"
-                        style={{ color: "#EF4444" }}
-                      >
-                        Delete
-                      </button>
+  <button
+    onClick={(e) => { e.stopPropagation(); handleRemoveFromLeaderboard(entry.id); }}
+    className="text-[10px] uppercase tracking-wider transition-opacity hover:opacity-70"
+    style={{ color: "var(--color-text-faint)" }}
+  >
+    Delete
+  </button>
                     ) : (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleReport(entry.id); }}
