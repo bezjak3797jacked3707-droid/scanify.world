@@ -107,6 +107,17 @@ export default function HistoryPage() {
     if (userId) await loadScans(userId, mode);
   }
 
+  async function handleDeleteScan(id: number) {
+    const confirmed = window.confirm("Delete this scan permanently? This cannot be undone.");
+    if (!confirmed) return;
+    const { error } = await supabase.from("scan_results").delete().eq("id", id);
+    if (error) {
+      alert("Failed to delete. Please try again.");
+      return;
+    }
+    setScans((prev) => prev.filter((s) => s.id !== id));
+  }
+
   const sorted = useMemo<Scan[]>(() => {
     if (sort === "expensive") return [...scans].sort((a, b) => parsePrice(b.current_value) - parsePrice(a.current_value));
     return scans;
@@ -182,10 +193,10 @@ export default function HistoryPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {sorted.map((scan) => (
-              <button
+              <div
                 key={scan.id}
                 onClick={() => router.push(scan.scan_type === "resell" ? `/resell/result?scanId=${scan.id}` : `/result?scanId=${scan.id}`)}
-                className="w-full text-left rounded-2xl flex gap-4 p-4 items-center transition-all hover:opacity-80 active:scale-[0.98]"
+                className="relative w-full text-left rounded-2xl flex gap-4 p-4 items-center transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer"
                 style={{
                   background: scan.scan_type === "resell" ? "linear-gradient(135deg, rgba(201,168,76,0.06) 0%, var(--color-surface) 70%)" : "var(--color-surface)",
                   border: scan.scan_type === "resell" ? "1px solid rgba(201,168,76,0.2)" : "1px solid var(--color-border)",
@@ -216,11 +227,20 @@ export default function HistoryPage() {
                   <p className="text-lg font-bold leading-none mb-1" style={{ color: "#00C853" }}>
                     ${Number(String(scan.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
                   </p>
-                  <p className="text-[11px]" style={{ color: "var(--color-text-faint)" }}>
-                    {scan.scan_type === "resell" ? "🏷️ Resell Scan" : scan.category}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px]" style={{ color: "var(--color-text-faint)" }}>
+                      {scan.scan_type === "resell" ? "🏷️ Resell Scan" : scan.category}
+                    </p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteScan(scan.id); }}
+                      className="text-[10px] uppercase tracking-wider transition-opacity hover:opacity-70"
+                      style={{ color: "var(--color-text-faint)" }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
