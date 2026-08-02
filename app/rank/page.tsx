@@ -12,6 +12,7 @@ interface LeaderboardEntry {
   category: string;
   display_name: string;
   created_at: string;
+  user_id: string | null;
 }
 
 export default function RankPage() {
@@ -20,6 +21,13 @@ export default function RankPage() {
   const [filter, setFilter] = useState<"all" | "cars">("all");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user?.id ?? null);
+    });
+  }, []);
 
   useEffect(() => {
     async function fetchLeaderboard() {
@@ -74,6 +82,17 @@ export default function RankPage() {
   async function handleReport(id: number) {
     await supabase.from("scan_results").update({ reported: true }).eq("id", id);
     alert("Reported! Thank you.");
+  }
+
+  async function handleRemoveFromLeaderboard(id: number) {
+    const confirmed = window.confirm("Remove this scan from the leaderboard? It will stay in your history.");
+    if (!confirmed) return;
+    const { error } = await supabase.from("scan_results").update({ on_leaderboard: false }).eq("id", id);
+    if (error) {
+      alert("Failed to remove. Please try again.");
+      return;
+    }
+    setEntries((prev) => prev.filter((e) => e.id !== id));
   }
 
   return (
@@ -148,44 +167,57 @@ export default function RankPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {entries.map((entry, index) => (
-              <div
-                key={entry.id}
-                onClick={() => router.push(`/result?scanId=${entry.id}`)}
-                className="flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-opacity hover:opacity-80"
-                style={{
-                  background: index === 0 ? "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, var(--color-surface) 70%)" : "var(--color-surface)",
-                  border: index === 0 ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-border)",
-                }}
-              >
-                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ background: index < 3 ? "rgba(201,168,76,0.1)" : "rgba(128,128,128,0.1)", color: index < 3 ? "var(--color-gold)" : "var(--color-text-muted)" }}>
-                  {index < 3 ? medals[index] : `#${index + 1}`}
-                </div>
+            {entries.map((entry, index) => {
+              const isOwn = currentUserId && entry.user_id === currentUserId;
+              return (
+                <div
+                  key={entry.id}
+                  onClick={() => router.push(`/result?scanId=${entry.id}`)}
+                  className="flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-opacity hover:opacity-80"
+                  style={{
+                    background: index === 0 ? "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, var(--color-surface) 70%)" : "var(--color-surface)",
+                    border: index === 0 ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-border)",
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ background: index < 3 ? "rgba(201,168,76,0.1)" : "rgba(128,128,128,0.1)", color: index < 3 ? "var(--color-gold)" : "var(--color-text-muted)" }}>
+                    {index < 3 ? medals[index] : `#${index + 1}`}
+                  </div>
 
-                <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0" style={{ background: "var(--color-thumb)" }}>
-                  {entry.image_url && <img src={entry.image_url} alt={entry.name} className="w-full h-full object-cover" />}
-                </div>
+                  <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0" style={{ background: "var(--color-thumb)" }}>
+                    {entry.image_url && <img src={entry.image_url} alt={entry.name} className="w-full h-full object-cover" />}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate" style={{ color: "var(--color-text-primary)" }}>{entry.name}</p>
-                  <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{entry.display_name || "Anonymous"}</p>
-                  <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>{entry.category}</p>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate" style={{ color: "var(--color-text-primary)" }}>{entry.name}</p>
+                    <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{entry.display_name || "Anonymous"}</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>{entry.category}</p>
+                  </div>
 
-                <div className="text-right flex-shrink-0 flex flex-col items-end gap-2">
-                  <p className="font-bold text-sm" style={{ color: index === 0 ? "var(--color-gold)" : "#00C853" }}>
-                    ${Number(String(entry.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
-                  </p>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleReport(entry.id); }}
-                    className="text-xs uppercase tracking-wider transition-opacity hover:opacity-70"
-                    style={{ color: "var(--color-text-faint)" }}
-                  >
-                    Report
-                  </button>
+                  <div className="text-right flex-shrink-0 flex flex-col items-end gap-2">
+                    <p className="font-bold text-sm" style={{ color: index === 0 ? "var(--color-gold)" : "#00C853" }}>
+                      ${Number(String(entry.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
+                    </p>
+                    {isOwn ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleRemoveFromLeaderboard(entry.id); }}
+                        className="text-xs uppercase tracking-wider transition-opacity hover:opacity-70"
+                        style={{ color: "#EF4444" }}
+                      >
+                        Delete
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleReport(entry.id); }}
+                        className="text-xs uppercase tracking-wider transition-opacity hover:opacity-70"
+                        style={{ color: "var(--color-text-faint)" }}
+                      >
+                        Report
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
