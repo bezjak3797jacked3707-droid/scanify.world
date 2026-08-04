@@ -185,8 +185,8 @@ export async function POST(req: NextRequest) {
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
     const noteHint = note
-      ? `The user has identified this item as: "${note}". Use this name exactly — do not add variants, trims, or editions the user did not mention.`
-      : "";
+  ? `The user provided this context about the item: "${note}". Use it as a helpful hint to guide your identification — but you must still determine and return the item's actual specific name (exact make, model, variant, year). If the user's note is vague (e.g. just "car" or "watch"), do not use their words as the name — identify the real item from the image itself. If the user's note gives a specific model name, prioritize that over your own visual guess for the model, but still verify and complete it with the correct full details (year, trim, edition) based on what's visible.`
+  : "";
 
     const userMessage = noteHint
       ? `${noteHint}\n\nAnalyze this item and return the JSON.`
