@@ -31,9 +31,15 @@ export async function POST(req: NextRequest) {
     const userId = session.metadata?.userId;
 
     if (userId) {
+      // Retrieve line items to determine which plan was purchased
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+      const priceId = lineItems.data[0]?.price?.id;
+
+      const plan = priceId === process.env.STRIPE_BUSINESS_PRICE_ID ? "business" : "pro";
+
       await supabase
         .from("profiles")
-        .update({ is_pro: true })
+        .update({ is_pro: true, plan })
         .eq("id", userId);
     }
   }
@@ -46,7 +52,7 @@ export async function POST(req: NextRequest) {
     if ("email" in customer && customer.email) {
       await supabase
         .from("profiles")
-        .update({ is_pro: false })
+        .update({ is_pro: false, plan: "free" })
         .eq("email", customer.email);
     }
   }
