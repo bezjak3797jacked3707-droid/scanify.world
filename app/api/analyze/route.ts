@@ -90,6 +90,8 @@ Cars — critical distinctions you must get right:
 - Ferrari 458 Speciale: fixed rear wing, aero bumpers, Speciale badging — worth significantly more than 458 Italia
 - Always identify carbon fiber aero kits, special edition badges, and unique trim details
 
+CRITICAL: The specific cars listed above (Revuelto, Huracán, Regera, Agera RS, Gemera, Kimera K39, Brabus Bodo, 458 Speciale/Italia) are reference examples ONLY. Never default to one of these names just because a car is rare, unusual, or hard to identify. If the visible badges, logos, proportions, or details do NOT clearly match one of these specific cars, identify the actual manufacturer and model you see instead — even if it's an obscure or low-production car you're less certain about. A rare car you correctly describe as "unidentified American hypercar, possibly SSC or similar" with lower confidence is far better than confidently misnaming it as one of the reference cars above. Always prioritize visible badges and manufacturer nameplates over silhouette similarity to these examples.
+
 Watches: brand, exact model, reference number, material, dial color, bezel type
 Sneakers: brand, exact model, colorway name, release year, collaboration
 Electronics: brand, exact model, generation, storage, color
