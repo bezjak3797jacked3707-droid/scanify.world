@@ -70,7 +70,7 @@ function ResellLoadingMessage({ deep }: { deep: boolean }) {
         setIndex((prev) => (prev + 1) % messages.length);
         setVisible(true);
       }, 300);
-    }, 2000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [messages]);
 
