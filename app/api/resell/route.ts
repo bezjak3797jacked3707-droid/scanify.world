@@ -4,28 +4,13 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
 import { updateStreak } from "@/lib/streak";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 300;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const maxRequests = 5;
-  const record = requestCounts.get(ip);
-  if (!record || now > record.resetTime) {
-    requestCounts.set(ip, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  if (record.count >= maxRequests) return false;
-  record.count++;
-  return true;
-}
 
 function parseJSON(text: string) {
   const clean = text.replace(/```json|```/g, "").trim();
@@ -136,7 +121,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-    if (!checkRateLimit(ip)) {
+    if (!(await checkRateLimit(ip))) {
       return NextResponse.json(
         { error: "Too many requests. Please wait a moment before scanning again." },
         { status: 429 }
