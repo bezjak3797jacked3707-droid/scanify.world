@@ -4,24 +4,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { supabase } from "@/lib/supabase";
 import { updateStreak } from "@/lib/streak";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 300;
-
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const maxRequests = 5;
-  const record = requestCounts.get(ip);
-  if (!record || now > record.resetTime) {
-    requestCounts.set(ip, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  if (record.count >= maxRequests) return false;
-  record.count++;
-  return true;
-}
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -145,7 +130,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-    if (!checkRateLimit(ip)) {
+    if (!(await checkRateLimit(ip))) {
       return NextResponse.json(
         { error: "Too many requests. Please wait a moment before scanning again." },
         { status: 429 }
@@ -187,8 +172,8 @@ export async function POST(req: NextRequest) {
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
     const noteHint = note
-  ? `The user provided this context about the item: "${note}". Use it as a helpful hint to guide your identification — but you must still determine and return the item's actual specific name (exact make, model, variant, year). If the user's note is vague (e.g. just "car" or "watch"), do not use their words as the name — identify the real item from the image itself. If the user's note gives a specific model name, prioritize that over your own visual guess for the model, but still verify and complete it with the correct full details (year, trim, edition) based on what's visible.`
-  : "";
+      ? `The user provided this context about the item: "${note}". Use it as a helpful hint to guide your identification — but you must still determine and return the item's actual specific name (exact make, model, variant, year). If the user's note is vague (e.g. just "car" or "watch"), do not use their words as the name — identify the real item from the image itself. If the user's note gives a specific model name, prioritize that over your own visual guess for the model, but still verify and complete it with the correct full details (year, trim, edition) based on what's visible.`
+      : "";
 
     const userMessage = noteHint
       ? `${noteHint}\n\nAnalyze this item and return the JSON.`
