@@ -36,7 +36,7 @@ function StatCard({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-const RESELL_LOADING_MESSAGES = [
+const FAST_LOADING_MESSAGES = [
   "Scanning resell markets…",
   "Identifying item…",
   "Checking eBay sold listings…",
@@ -47,24 +47,36 @@ const RESELL_LOADING_MESSAGES = [
   "Almost there…",
 ];
 
-function ResellLoadingMessage() {
+const DEEP_LOADING_MESSAGES = [
+  "Identifying item…",
+  "Searching live listings…",
+  "Checking eBay sold prices…",
+  "Checking StockX and GOAT…",
+  "Cross-referencing platforms…",
+  "Verifying real sold prices…",
+  "Compiling sourced data…",
+  "Almost there…",
+];
+
+function ResellLoadingMessage({ deep }: { deep: boolean }) {
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+  const messages = deep ? DEEP_LOADING_MESSAGES : FAST_LOADING_MESSAGES;
 
   useEffect(() => {
     const interval = setInterval(() => {
       setVisible(false);
       setTimeout(() => {
-        setIndex((prev) => (prev + 1) % RESELL_LOADING_MESSAGES.length);
+        setIndex((prev) => (prev + 1) % messages.length);
         setVisible(true);
       }, 300);
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [messages]);
 
   return (
     <p className="text-sm uppercase tracking-widest transition-opacity duration-300" style={{ color: "var(--color-gold)", opacity: visible ? 1 : 0 }}>
-      {RESELL_LOADING_MESSAGES[index]}
+      {messages[index]}
     </p>
   );
 }
@@ -77,6 +89,7 @@ export default function ResellResultContent() {
   const [error, setError] = useState<string | null>(null);
   const [preferredPlatform, setPreferredPlatform] = useState("eBay");
   const [isSharing, setIsSharing] = useState(false);
+  const [wasDeepResearch, setWasDeepResearch] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -85,8 +98,10 @@ export default function ResellResultContent() {
       const userId = params.get("userId");
       const platform = params.get("platform") || "eBay";
       const scanId = params.get("scanId");
+      const requestDeepResearch = params.get("deepResearch") === "true";
 
       setPreferredPlatform(platform);
+      setWasDeepResearch(requestDeepResearch);
 
       if (scanId) {
         try {
@@ -95,6 +110,7 @@ export default function ResellResultContent() {
             setResult(data.full_result);
             setImageUrlState(data.image_url);
             setPreferredPlatform(data.full_result.platforms?.[0]?.name || "eBay");
+            setWasDeepResearch(!!data.full_result.isDeepResearch);
             setLoading(false);
             return;
           }
@@ -112,7 +128,7 @@ export default function ResellResultContent() {
         const res = await fetch("/api/resell", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl, userId, preferredPlatform: platform }),
+          body: JSON.stringify({ imageUrl, userId, preferredPlatform: platform, deepResearch: requestDeepResearch }),
         });
         const data = await res.json();
         if (data.error === "inappropriate_content") { setError("This item cannot be scanned."); setLoading(false); return; }
@@ -121,6 +137,7 @@ export default function ResellResultContent() {
         if (data.error === "scan_limit_reached") { setError("You've used your free scans. Upgrade to Pro for more."); setLoading(false); return; }
         if (!res.ok) throw new Error("Analysis failed");
         setResult(data);
+        setWasDeepResearch(!!data.isDeepResearch);
       } catch {
         setError("Could not analyze image. Please try again.");
       } finally {
@@ -160,7 +177,7 @@ export default function ResellResultContent() {
             <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
           ))}
         </div>
-        <ResellLoadingMessage />
+        <ResellLoadingMessage deep={wasDeepResearch} />
       </main>
     );
   }
@@ -190,6 +207,20 @@ export default function ResellResultContent() {
 
         {result && (
           <>
+            {/* Honest data source badge */}
+            <div
+              className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-full self-center"
+              style={{
+                background: result.isDeepResearch ? "rgba(0,200,83,0.1)" : "rgba(245,158,11,0.08)",
+                border: result.isDeepResearch ? "1px solid rgba(0,200,83,0.3)" : "1px solid rgba(245,158,11,0.25)",
+              }}
+            >
+              <span style={{ fontSize: 12 }}>{result.isDeepResearch ? "✓" : "~"}</span>
+              <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: result.isDeepResearch ? "#00C853" : "#F59E0B" }}>
+                {result.isDeepResearch ? "Verified via live search" : "Estimated pricing"}
+              </span>
+            </div>
+
             <h1 className="text-4xl text-center leading-tight" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>
               {result.name}
             </h1>
