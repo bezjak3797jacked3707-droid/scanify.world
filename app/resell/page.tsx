@@ -9,7 +9,6 @@ const PLATFORMS = [
   "eBay",
   "Facebook Marketplace",
   "Craigslist",
-  "Blocket",
   "Vinted",
   "Depop",
   "StockX",
@@ -47,10 +46,12 @@ export default function ResellPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [isBusiness, setIsBusiness] = useState(false);
   const [scansUsed, setScansUsed] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [preferredPlatform, setPreferredPlatform] = useState("eBay");
+  const [deepResearch, setDeepResearch] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [isPreUploading, setIsPreUploading] = useState(false);
@@ -62,9 +63,13 @@ export default function ResellPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase.from("profiles").select("resell_scans_used, is_pro").eq("id", session.user.id).single()
+        supabase.from("profiles").select("resell_scans_used, is_pro, plan").eq("id", session.user.id).single()
           .then(({ data }) => {
-            if (data) { setScansUsed(data.resell_scans_used || 0); setIsPro(data.is_pro); }
+            if (data) {
+              setScansUsed(data.resell_scans_used || 0);
+              setIsPro(data.is_pro);
+              setIsBusiness(data.plan === "business");
+            }
           });
       }
     });
@@ -82,7 +87,6 @@ export default function ResellPage() {
     setError("");
     e.target.value = "";
 
-    // Pre-upload in background immediately
     setIsPreUploading(true);
     try {
       const compressed = await compressImage(selected);
@@ -111,7 +115,6 @@ export default function ResellPage() {
     try {
       let publicUrl = uploadedUrl;
 
-      // If pre-upload didn't finish, upload now
       if (!publicUrl) {
         const compressed = await compressImage(file);
         const fileName = `${Date.now()}.jpg`;
@@ -124,7 +127,9 @@ export default function ResellPage() {
         publicUrl = data.publicUrl;
       }
 
-      router.push(`/resell/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user.id}&platform=${encodeURIComponent(preferredPlatform)}`);
+      router.push(
+        `/resell/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user.id}&platform=${encodeURIComponent(preferredPlatform)}${deepResearch && isBusiness ? "&deepResearch=true" : ""}`
+      );
     } catch (err) {
       setError("Upload failed. Please try again.");
       setIsUploading(false);
@@ -155,6 +160,58 @@ export default function ResellPage() {
           <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Resell Scanner</p>
           <h1 className="text-3xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>What's It Worth?</h1>
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Find the best price across reselling platforms</p>
+        </div>
+
+        {/* Deep Research toggle */}
+        <div
+          className="rounded-2xl p-4 flex items-center justify-between gap-3"
+          style={{
+            background: isBusiness ? "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)" : "var(--color-surface)",
+            border: isBusiness ? "1px solid rgba(201,168,76,0.3)" : "1px solid var(--color-border)",
+          }}
+        >
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-sm font-semibold" style={{ color: isBusiness ? "var(--color-gold)" : "var(--color-text-secondary)" }}>
+                🔍 Deep Research
+              </p>
+              {!isBusiness && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider" style={{ background: "rgba(201,168,76,0.15)", color: "var(--color-gold)" }}>
+                  Business
+                </span>
+              )}
+            </div>
+            <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              {isBusiness
+                ? "Live web search for real sold listings. Takes longer, more accurate."
+                : "Unlock live-searched real market data with Business."}
+            </p>
+          </div>
+
+          {isBusiness ? (
+            <button
+              onClick={() => setDeepResearch((v) => !v)}
+              className="relative flex-shrink-0 rounded-full transition-colors"
+              style={{ width: 44, height: 26, background: deepResearch ? "var(--color-green)" : "var(--color-border)" }}
+            >
+              <span
+                className="absolute rounded-full transition-transform"
+                style={{
+                  width: 20, height: 20, top: 3, left: 3,
+                  background: deepResearch ? "var(--color-gold)" : "var(--color-text-muted)",
+                  transform: deepResearch ? "translateX(18px)" : "translateX(0)",
+                }}
+              />
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push("/pricing")}
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider"
+              style={{ border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}
+            >
+              Upgrade
+            </button>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -239,7 +296,7 @@ export default function ResellPage() {
             className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity disabled:opacity-50"
             style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
           >
-            {isUploading ? "Preparing…" : "Get Resell Value"}
+            {isUploading ? "Preparing…" : deepResearch && isBusiness ? "Get Verified Resell Value" : "Get Resell Value"}
           </button>
         )}
 
