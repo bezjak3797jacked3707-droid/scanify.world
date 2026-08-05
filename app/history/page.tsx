@@ -110,12 +110,19 @@ export default function HistoryPage() {
   async function handleDeleteScan(id: number) {
     const confirmed = window.confirm("Delete this scan permanently? This cannot be undone.");
     if (!confirmed) return;
-    const { error } = await supabase.from("scan_results").delete().eq("id", id);
-    if (error) {
+    if (!userId) return;
+  
+    try {
+      const res = await fetch("/api/delete-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scanId: id, userId }),
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      setScans((prev) => prev.filter((s) => s.id !== id));
+    } catch {
       alert("Failed to delete. Please try again.");
-      return;
     }
-    setScans((prev) => prev.filter((s) => s.id !== id));
   }
 
   const sorted = useMemo<Scan[]>(() => {
