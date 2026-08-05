@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 interface Profile {
   scans_used: number;
   is_pro: boolean;
+  plan: string;
   current_streak: number;
   longest_streak: number;
 }
@@ -62,7 +63,7 @@ export default function ProfilePage() {
       if (!session) { router.push("/"); return; }
       setUser(session.user);
 
-      const { data: profileData } = await supabase.from("profiles").select("scans_used, is_pro, current_streak, longest_streak").eq("id", session.user.id).single();
+      const { data: profileData } = await supabase.from("profiles").select("scans_used, is_pro, plan, current_streak, longest_streak").eq("id", session.user.id).single();
       setProfile(profileData);
 
       const { count } = await supabase.from("scan_results").select("*", { count: "exact", head: true }).eq("user_id", session.user.id);
@@ -136,6 +137,8 @@ export default function ProfilePage() {
     );
   }
 
+  const isBusiness = profile?.plan === "business";
+
   return (
     <main className="min-h-screen pb-24" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <div className="max-w-md mx-auto px-5 py-8 space-y-6">
@@ -158,11 +161,11 @@ export default function ProfilePage() {
             <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>{user?.email}</p>
           </div>
           <div className="px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest" style={{
-            background: profile?.is_pro ? "rgba(201,168,76,0.15)" : "rgba(27,77,62,0.3)",
-            border: profile?.is_pro ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-green)",
-            color: profile?.is_pro ? "var(--color-gold)" : "#00C853",
+            background: isBusiness ? "rgba(0,200,83,0.12)" : profile?.is_pro ? "rgba(201,168,76,0.15)" : "rgba(27,77,62,0.3)",
+            border: isBusiness ? "1px solid rgba(0,200,83,0.4)" : profile?.is_pro ? "1px solid rgba(201,168,76,0.4)" : "1px solid var(--color-green)",
+            color: isBusiness ? "#00C853" : profile?.is_pro ? "var(--color-gold)" : "#00C853",
           }}>
-            {profile?.is_pro ? "⭐ Pro Member" : "Free Plan"}
+            {isBusiness ? "💼 Business Member" : profile?.is_pro ? "⭐ Pro Member" : "Free Plan"}
           </div>
         </div>
 
@@ -193,7 +196,7 @@ export default function ProfilePage() {
           </div>
           <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-3xl font-bold" style={{ color: "#00C853" }}>
-              {profile?.is_pro ? "200+" : `${Math.max(0, 3 - (profile?.scans_used || 0))}`}
+              {isBusiness ? "∞" : profile?.is_pro ? "200+" : `${Math.max(0, 3 - (profile?.scans_used || 0))}`}
             </p>
             <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
               {profile?.is_pro ? "Scans / Month" : "Scans Left"}
@@ -266,6 +269,12 @@ export default function ProfilePage() {
         {!profile?.is_pro && (
           <button onClick={() => router.push("/pricing")} className="w-full py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-80" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
             Upgrade to Pro
+          </button>
+        )}
+
+        {profile?.is_pro && !isBusiness && (
+          <button onClick={() => router.push("/pricing")} className="w-full py-3 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-70" style={{ border: "1px solid rgba(0,200,83,0.4)", color: "#00C853" }}>
+            Upgrade to Business
           </button>
         )}
 
