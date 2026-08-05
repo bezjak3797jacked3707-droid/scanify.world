@@ -42,6 +42,7 @@ const COMPARISON = [
   { label: "Price history graph", free: false,    pro: true,        business: true        },
   { label: "Leaderboard",         free: false,    pro: true,        business: true        },
   { label: "Materials & specs",   free: true,     pro: true,        business: true        },
+  { label: "Deep Research resell (live web search)", free: false, pro: false, business: true },
   { label: "Priority support",    free: false,    pro: false,       business: true        },
 ];
 
@@ -176,6 +177,12 @@ export default function PricingPage() {
                   <span className="text-[11px] leading-snug" style={{ color: "var(--color-text-secondary)" }}>{f}</span>
                 </li>
               ))}
+              <li className="flex items-start gap-2 rounded-lg p-2 -mx-2" style={{ background: "rgba(0,200,83,0.08)" }}>
+                <CheckIcon />
+                <span className="text-[11px] leading-snug font-semibold" style={{ color: "#00C853" }}>
+                  🔍 Deep Research resell scans — real live web search for verified sold prices
+                </span>
+              </li>
             </ul>
             <button
               onClick={() => handleUpgrade("business")}
