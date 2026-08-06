@@ -12,7 +12,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function saveResult(parsed: any, imageUrl: string, userId: string | null, displayName: string | null) {
+async function saveResult(parsed: any, imageUrl: string, userId: string | null, displayName: string | null, eligibleForLeaderboard: boolean) {
   const { error: dbError } = await supabase.from("scan_results").insert({
     image_url: imageUrl,
     name: parsed.name,
@@ -26,6 +26,7 @@ async function saveResult(parsed: any, imageUrl: string, userId: string | null, 
     user_id: userId || null,
     full_result: parsed,
     display_name: displayName || "Anonymous",
+    on_leaderboard: eligibleForLeaderboard,
   });
   if (dbError) console.error("DB save error:", dbError.message);
   if (userId) {
@@ -123,7 +124,8 @@ RESPONSE FORMAT — return only valid JSON, no markdown, no explanation:
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageUrl, userId, note, displayName } = await req.json();
+    const { imageUrl, userId, note, displayName, eligibleForLeaderboard } = await req.json();
+    const isEligibleForLeaderboard = eligibleForLeaderboard === true || eligibleForLeaderboard === "true";
 
     if (!imageUrl) {
       return NextResponse.json({ error: "No image URL provided" }, { status: 400 });
@@ -192,7 +194,7 @@ export async function POST(req: NextRequest) {
       const parsed = parseJSON(result.response.text().trim());
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
+      await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Gemini 3.1 Flash-Lite failed:", err?.message);
@@ -230,7 +232,7 @@ export async function POST(req: NextRequest) {
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
+      await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("Claude Sonnet failed:", err?.message);
@@ -263,7 +265,7 @@ export async function POST(req: NextRequest) {
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-      await saveResult(parsed, imageUrl, userId, displayName);
+      await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
     } catch (err: any) {
       console.error("GPT-4o failed:", err?.message);

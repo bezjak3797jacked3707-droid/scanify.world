@@ -149,6 +149,7 @@ export default function ResultContent() {
   const [chartDrawn, setChartDrawn] = useState(false);
   const [isLoadingFromHistory, setIsLoadingFromHistory] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isLeaderboardEligible, setIsLeaderboardEligible] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -159,11 +160,12 @@ export default function ResultContent() {
       setIsLoadingFromHistory(true);
       async function loadFromDb() {
         try {
-          const { data, error } = await supabase.from("scan_results").select("full_result, image_url").eq("id", scanId).single();
+          const { data, error } = await supabase.from("scan_results").select("full_result, image_url, on_leaderboard").eq("id", scanId).single();
           if (error) throw new Error("Not found");
           if (data?.full_result) {
             setResult(data.full_result);
             setImageUrlState(data.image_url);
+            setIsLeaderboardEligible(!!data.on_leaderboard);
             setTimeout(() => setChartDrawn(true), 1700);
             setLoading(false);
           } else if (data?.image_url) {
@@ -173,6 +175,7 @@ export default function ResultContent() {
             if (!res.ok) throw new Error("Analysis failed");
             setResult(scanData);
             setImageUrlState(data.image_url);
+            setIsLeaderboardEligible(!!data.on_leaderboard);
             setTimeout(() => setShowConfetti(true), 200);
             setTimeout(() => setShowConfetti(false), 1200);
             setTimeout(() => setChartDrawn(true), 1700);
@@ -189,12 +192,21 @@ export default function ResultContent() {
 
     if (!imageUrlParam) { setLoading(false); return; }
 
+    const eligibleParam = params.get("eligibleForLeaderboard") === "true";
+    setIsLeaderboardEligible(eligibleParam);
+
     async function analyze() {
       try {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl: imageUrlParam, userId: params.get("userId"), note: params.get("note"), displayName: params.get("displayName") }),
+          body: JSON.stringify({
+            imageUrl: imageUrlParam,
+            userId: params.get("userId"),
+            note: params.get("note"),
+            displayName: params.get("displayName"),
+            eligibleForLeaderboard: eligibleParam,
+          }),
         });
         const scanData = await res.json();
         if (handleContentError(scanData.error, setError, setLoading)) return;
@@ -357,16 +369,25 @@ export default function ResultContent() {
               </div>
             )}
 
-            <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(27,77,62,0.6) 0%, var(--color-surface) 70%)", border: "1px solid var(--color-green)" }}>
-              <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.4)" }}>
-                <TrophyIcon />
+            {isLeaderboardEligible ? (
+              <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(27,77,62,0.6) 0%, var(--color-surface) 70%)", border: "1px solid var(--color-green)" }}>
+                <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.4)" }}>
+                  <TrophyIcon />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Leaderboard</p>
+                  <p className="text-lg font-bold mt-0.5">Top {rankPercent}% by Value</p>
+                  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Across all {result.category} scans</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Leaderboard</p>
-                <p className="text-lg font-bold mt-0.5">Top {rankPercent}% by Value</p>
-                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Across all {result.category} scans</p>
+            ) : (
+              <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <span style={{ fontSize: 20 }}>📷</span>
+                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  Gallery scans aren't shown on the leaderboard — take a photo directly to compete.
+                </p>
               </div>
-            </div>
+            )}
 
             <InfoCard label="Details" content={result.description} />
             <InfoCard label="Materials" content={result.materials} />
