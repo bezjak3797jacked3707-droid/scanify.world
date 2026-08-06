@@ -31,10 +31,12 @@ async function compressImage(file: File): Promise<File> {
 
 export default function ScanPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const libraryInputRef = useRef<HTMLInputElement | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [fromCamera, setFromCamera] = useState(true);
   const [note, setNote] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
@@ -57,19 +59,26 @@ export default function ScanPage() {
   const scanLimit = 3;
   const limitReached = !isPro && scansUsed >= scanLimit;
 
-  function openPicker() {
+  function openCamera() {
     if (!user) { router.push("/"); return; }
     if (limitReached) return;
-    fileInputRef.current?.click();
+    cameraInputRef.current?.click();
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function openLibrary() {
+    if (!user) { router.push("/"); return; }
+    if (limitReached) return;
+    libraryInputRef.current?.click();
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>, source: "camera" | "library") {
     const selected = e.target.files?.[0];
     if (!selected) return;
 
     setUploadedUrl(null);
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
+    setFromCamera(source === "camera");
     setError("");
     e.target.value = "";
 
@@ -114,7 +123,7 @@ export default function ScanPage() {
       }
 
       router.push(
-        `/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&displayName=${encodeURIComponent(user?.user_metadata?.full_name ?? "Anonymous")}`
+        `/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&displayName=${encodeURIComponent(user?.user_metadata?.full_name ?? "Anonymous")}&eligibleForLeaderboard=${fromCamera}`
       );
     } catch (err) {
       setError("Upload failed. Please try again.");
@@ -125,11 +134,19 @@ export default function ScanPage() {
   return (
     <main className="min-h-screen flex flex-col" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => handleFileChange(e, "camera")}
+      />
+      <input
+        ref={libraryInputRef}
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={handleFileChange}
+        onChange={(e) => handleFileChange(e, "library")}
       />
 
       {!preview ? (
@@ -162,10 +179,10 @@ export default function ScanPage() {
             <span className="absolute bottom-0 right-0 w-9 h-9 border-b-[3px] border-r-[3px]" style={{ borderColor: limitReached ? "var(--color-border)" : "var(--color-green)" }} />
 
             <button
-              onClick={openPicker}
+              onClick={openCamera}
               type="button"
               disabled={limitReached}
-              aria-label="Open camera or file picker"
+              aria-label="Open camera"
               className="w-24 h-24 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:scale-95 disabled:opacity-30"
               style={{ background: "var(--color-green)" }}
             >
@@ -177,9 +194,16 @@ export default function ScanPage() {
           </div>
 
           {!limitReached && (
-            <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--color-gold)" }}>
-              {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
-            </p>
+            <>
+              <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--color-gold)" }}>
+                {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
+              </p>
+              {user && (
+                <button onClick={openLibrary} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>
+                  Or upload from gallery
+                </button>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -189,9 +213,14 @@ export default function ScanPage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <button onClick={openPicker} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
-              Retake photo
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={openCamera} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-gold)" }}>
+                Retake
+              </button>
+              <button onClick={openLibrary} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>
+                Choose Different
+              </button>
+            </div>
             {isPreUploading && (
               <p className="text-xs" style={{ color: "var(--color-text-faint)" }}>Preparing…</p>
             )}
@@ -199,6 +228,15 @@ export default function ScanPage() {
               <p className="text-xs" style={{ color: "#00C853" }}>✓ Ready</p>
             )}
           </div>
+
+          {!fromCamera && (
+            <div className="rounded-xl px-3 py-2 flex items-center gap-2" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+              <span style={{ fontSize: 14 }}>ℹ️</span>
+              <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                Gallery photos are saved to your history but aren't eligible for the leaderboard.
+              </p>
+            </div>
+          )}
 
           <textarea
             value={note}
