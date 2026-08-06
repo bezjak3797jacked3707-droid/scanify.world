@@ -106,7 +106,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
+    <main className="min-h-screen" style={{ background: "var(--color-black)", color: "var(--color-text-primary)", paddingTop: "env(safe-area-inset-top)" }}>
 
       {/* HERO */}
       <section
