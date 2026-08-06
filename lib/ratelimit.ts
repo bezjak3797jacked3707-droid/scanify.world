@@ -14,10 +14,11 @@ export const scanRateLimit = new Ratelimit({
 });
 
 export async function checkRateLimit(ip: string): Promise<boolean> {
-  try {
-    const { success } = await scanRateLimit.limit(ip);
-    return success;
-  } catch (err) {
+    try {
+      const { success, remaining } = await scanRateLimit.limit(ip);
+      console.log(`Rate limit check — IP: ${ip}, success: ${success}, remaining: ${remaining}`);
+      return success;
+    } catch (err) {
     // Fail open: if Redis is briefly unreachable, allow the request
     // rather than blocking every scan on an infrastructure hiccup
     console.error("Rate limit check failed, allowing request:", err);
