@@ -200,13 +200,13 @@ export default function ScanPage() {
               </p>
               {user && (
                 <button
-                  onClick={openLibrary}
-                  type="button"
-                  className="w-full max-w-[300px] py-3 rounded-2xl text-xs font-semibold uppercase tracking-widest transition-opacity hover:opacity-70"
-                  style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
-                >
-                  Upload from Gallery
-                </button>
+                onClick={openLibrary}
+                type="button"
+                className="w-full max-w-[300px] py-4 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-85"
+                style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+              >
+                Upload from Gallery
+              </button>
               )}
             </>
           )}
