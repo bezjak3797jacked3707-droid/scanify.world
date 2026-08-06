@@ -199,8 +199,13 @@ export default function ScanPage() {
                 {!user ? "Sign in to scan" : isPro ? "Tap to scan" : `${scanLimit - scansUsed} free scan${scanLimit - scansUsed !== 1 ? "s" : ""} remaining`}
               </p>
               {user && (
-                <button onClick={openLibrary} type="button" className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>
-                  Or upload from gallery
+                <button
+                  onClick={openLibrary}
+                  type="button"
+                  className="w-full max-w-[300px] py-3 rounded-2xl text-xs font-semibold uppercase tracking-widest transition-opacity hover:opacity-70"
+                  style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+                >
+                  Upload from Gallery
                 </button>
               )}
             </>
