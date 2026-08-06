@@ -208,7 +208,7 @@ export default function Home() {
         <div className="flex flex-col gap-3 mb-8">
           {[
             { n: "1", title: "Snap or upload", body: "Take a photo of any item — sneakers, electronics, collectibles, art." },
-            { n: "2", title: "AI analyzes", body: "Gemini Vision identifies the item and pulls real market data." },
+            { n: "2", title: "AI analyzes", body: "Advanced AI identifies the item and pulls real market data." },
             { n: "3", title: "See the value", body: "Get current price, 7-year history graph, materials, and full specs." },
           ].map((s) => (
             <div key={s.n} className="flex gap-4 items-start rounded-2xl p-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
