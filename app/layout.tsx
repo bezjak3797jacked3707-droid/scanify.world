@@ -48,7 +48,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="shortcut icon" href="/favicon-32x32.png" />
       </head>
-      <body className="bg-[#0a0a0a] flex justify-center" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <body className="bg-[#0a0a0a] flex justify-center">
         <div className="w-full max-w-md min-h-screen bg-[#111111] border-x border-[#1e1e1e] relative pb-24">
           {children}
           <BottomNav />
