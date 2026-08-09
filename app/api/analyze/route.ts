@@ -185,8 +185,8 @@ export async function POST(req: NextRequest) {
 
     // PRIMARY: Gemini 3.1 Flash-Lite
     try {
-      console.log("Trying Gemini 3.1 Flash-Lite...");
-      const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+      console.log("Trying Gemini 3.5 Flash-Lite...");
+const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
       const result = await model.generateContent([
         fullPrompt,
         { inlineData: { mimeType, data: base64Image } },
