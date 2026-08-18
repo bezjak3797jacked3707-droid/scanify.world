@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { Capacitor } from "@capacitor/core";
 
 const FREE_FEATURES = [
   { label: "3 scans per month",        included: true  },
@@ -66,14 +67,16 @@ function CrossIcon() {
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const [isNative, setIsNative] = useState(false);
+
+  useEffect(() => {
+    setIsNative(Capacitor.isNativePlatform());
+  }, []);
 
   async function handleUpgrade(plan: "pro" | "business") {
     setLoading(plan);
-  
+
     const { data: { session } } = await supabase.auth.getSession();
-  
-    console.log("Session:", session?.user?.id);
-    console.log("Price ID:", plan === "pro" ? process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID : process.env.NEXT_PUBLIC_STRIPE_BUSINESS_PRICE_ID);
 
     if (!session) {
       window.location.href = "/";
@@ -103,6 +106,14 @@ export default function PricingPage() {
     setLoading(null);
   }
 
+  function NativeUpgradeNotice() {
+    return (
+      <div className="w-full text-center py-3 rounded-2xl text-[11px]" style={{ background: "var(--color-thumb)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
+        Manage your plan at <span style={{ color: "var(--color-gold)", fontWeight: 600 }}>scanify.world</span>
+      </div>
+    );
+  }
+
   return (
     <main className="min-h-screen pb-12" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <div className="px-5 pt-10">
@@ -115,7 +126,7 @@ export default function PricingPage() {
 
         <div className="flex flex-col gap-4 mb-8">
 
-          {/* Free card */}
+          {/* Free card — unchanged on native or web */}
           <div className="rounded-3xl p-5 flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-text-muted)" }}>Free</p>
             <div className="flex items-end gap-1 mb-5">
@@ -142,7 +153,7 @@ export default function PricingPage() {
             </div>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pro</p>
             <div className="flex items-end gap-1 mb-5">
-            <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$2.99</span>
+              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$2.99</span>
               <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/mo</span>
             </div>
             <ul className="flex flex-col gap-3 flex-1 mb-5">
@@ -153,14 +164,18 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <button
-              onClick={() => handleUpgrade("pro")}
-              disabled={loading === "pro"}
-              className="w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85 disabled:opacity-50"
-              style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
-            >
-              {loading === "pro" ? "Loading..." : "Upgrade to Pro"}
-            </button>
+            {isNative ? (
+              <NativeUpgradeNotice />
+            ) : (
+              <button
+                onClick={() => handleUpgrade("pro")}
+                disabled={loading === "pro"}
+                className="w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85 disabled:opacity-50"
+                style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+              >
+                {loading === "pro" ? "Loading..." : "Upgrade to Pro"}
+              </button>
+            )}
           </div>
 
           {/* Business card */}
@@ -184,14 +199,18 @@ export default function PricingPage() {
                 </span>
               </li>
             </ul>
-            <button
-              onClick={() => handleUpgrade("business")}
-              disabled={loading === "business"}
-              className="w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85 disabled:opacity-50"
-              style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", color: "var(--color-gold)" }}
-            >
-              {loading === "business" ? "Loading..." : "Get Business"}
-            </button>
+            {isNative ? (
+              <NativeUpgradeNotice />
+            ) : (
+              <button
+                onClick={() => handleUpgrade("business")}
+                disabled={loading === "business"}
+                className="w-full text-center py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-opacity hover:opacity-85 disabled:opacity-50"
+                style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", color: "var(--color-gold)" }}
+              >
+                {loading === "business" ? "Loading..." : "Get Business"}
+              </button>
+            )}
           </div>
 
         </div>
