@@ -150,7 +150,7 @@ export default function ScanPage() {
       />
 
       {!preview ? (
-        <div className="flex flex-col flex-1 items-center justify-center px-10 gap-2">
+        <div className="flex flex-col flex-1 items-center px-10 gap-4" style={{ justifyContent: "flex-start", paddingTop: "10vh" }}>
 
           {limitReached && (
             <div className="w-full max-w-[300px] rounded-2xl p-4 text-center space-y-3" style={{ background: "var(--color-surface)", border: "1px solid #7c3aed" }}>
@@ -172,7 +172,7 @@ export default function ScanPage() {
             </div>
           )}
 
-          <div className="relative w-full max-w-[300px] aspect-square flex items-center justify-center">
+          <div className="relative w-full max-w-[240px] aspect-square flex items-center justify-center" style={{ marginBottom: 8 }}>
             <span className="absolute top-0 left-0 w-9 h-9 border-t-[3px] border-l-[3px]" style={{ borderColor: limitReached ? "var(--color-border)" : "var(--color-green)" }} />
             <span className="absolute top-0 right-0 w-9 h-9 border-t-[3px] border-r-[3px]" style={{ borderColor: limitReached ? "var(--color-border)" : "var(--color-green)" }} />
             <span className="absolute bottom-0 left-0 w-9 h-9 border-b-[3px] border-l-[3px]" style={{ borderColor: limitReached ? "var(--color-border)" : "var(--color-green)" }} />
@@ -183,10 +183,10 @@ export default function ScanPage() {
               type="button"
               disabled={limitReached}
               aria-label="Open camera"
-              className="w-24 h-24 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:scale-95 disabled:opacity-30"
+              className="w-20 h-20 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:scale-95 disabled:opacity-30"
               style={{ background: "var(--color-green)" }}
             >
-              <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <svg width="30" height="30" viewBox="0 0 36 36" fill="none">
                 <line x1="18" y1="6" x2="18" y2="30" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" />
                 <line x1="6" y1="18" x2="30" y2="18" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
@@ -200,13 +200,13 @@ export default function ScanPage() {
               </p>
               {user && (
                 <button
-                onClick={openLibrary}
-                type="button"
-                className="w-full max-w-[300px] py-4 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-85"
-                style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
-              >
-                Upload from Gallery
-              </button>
+                  onClick={openLibrary}
+                  type="button"
+                  className="w-full max-w-[300px] py-4 rounded-2xl text-sm font-semibold uppercase tracking-wider transition-opacity hover:opacity-85"
+                  style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+                >
+                  Upload from Gallery
+                </button>
               )}
             </>
           )}
