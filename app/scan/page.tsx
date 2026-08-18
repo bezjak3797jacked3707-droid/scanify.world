@@ -150,7 +150,7 @@ export default function ScanPage() {
       />
 
       {!preview ? (
-        <div className="flex flex-col flex-1 items-center px-10 gap-4" style={{ justifyContent: "flex-start", paddingTop: "10vh" }}>
+        <div className="flex flex-col flex-1 items-center justify-center px-10 gap-4" style={{ transform: "translateY(-6vh)" }}>
 
           {limitReached && (
             <div className="w-full max-w-[300px] rounded-2xl p-4 text-center space-y-3" style={{ background: "var(--color-surface)", border: "1px solid #7c3aed" }}>
