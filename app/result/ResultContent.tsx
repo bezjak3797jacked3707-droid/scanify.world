@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { getNextAchievement, formatAchievementProgress } from "@/lib/achievements";
 
 interface PricePoint {
   year: string;
@@ -139,6 +140,64 @@ function handleContentError(errorCode: string, setError: (msg: string) => void, 
   return false;
 }
 
+function NextAchievementCard({ userId }: { userId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [nextLabel, setNextLabel] = useState<string | null>(null);
+  const [nextProgress, setNextProgress] = useState<string | null>(null);
+  const [nextEmoji, setNextEmoji] = useState<string>("🏅");
+
+  useEffect(() => {
+    async function load() {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("longest_streak")
+        .eq("id", userId)
+        .single();
+
+      const { count } = await supabase
+        .from("scan_results")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+
+      const { data: scans } = await supabase
+        .from("scan_results")
+        .select("current_value, category")
+        .eq("user_id", userId);
+
+      let portfolioValue = 0;
+      let categoryCount = 0;
+      if (scans && scans.length > 0) {
+        portfolioValue = scans.reduce((sum, s) => {
+          const v = parseFloat(String(s.current_value).replace(/[^0-9.]/g, ""));
+          return sum + (isNaN(v) ? 0 : v);
+        }, 0);
+        categoryCount = new Set(scans.map((s) => s.category || "Other")).size;
+      }
+
+      const next = getNextAchievement(count || 0, categoryCount, profile?.longest_streak || 0, portfolioValue);
+      if (next) {
+        setNextLabel(next.label);
+        setNextEmoji(next.emoji);
+        setNextProgress(formatAchievementProgress(next));
+      }
+      setLoading(false);
+    }
+    load();
+  }, [userId]);
+
+  if (loading || !nextLabel) return null;
+
+  return (
+    <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)", border: "1px solid rgba(201,168,76,0.3)" }}>
+      <span style={{ fontSize: 26 }}>{nextEmoji}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold" style={{ color: "var(--color-gold)" }}>{nextLabel}</p>
+        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{nextProgress}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function ResultContent() {
   const router = useRouter();
   const [imageUrlState, setImageUrlState] = useState<string | null>(null);
@@ -150,18 +209,22 @@ export default function ResultContent() {
   const [isLoadingFromHistory, setIsLoadingFromHistory] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isLeaderboardEligible, setIsLeaderboardEligible] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const imageUrlParam = params.get("imageUrl");
     const scanId = params.get("scanId");
+    const userIdParam = params.get("userId");
+    if (userIdParam) setUserId(userIdParam);
 
     if (scanId) {
       setIsLoadingFromHistory(true);
       async function loadFromDb() {
         try {
-          const { data, error } = await supabase.from("scan_results").select("full_result, image_url, on_leaderboard").eq("id", scanId).single();
+          const { data, error } = await supabase.from("scan_results").select("full_result, image_url, on_leaderboard, user_id").eq("id", scanId).single();
           if (error) throw new Error("Not found");
+          if (data?.user_id) setUserId(data.user_id);
           if (data?.full_result) {
             setResult(data.full_result);
             setImageUrlState(data.image_url);
@@ -337,6 +400,8 @@ export default function ResultContent() {
                 <p className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>{result.category}</p>
               </StatCard>
             </div>
+
+            {userId && <NextAchievementCard userId={userId} />}
 
             {/* Share button */}
             <button
