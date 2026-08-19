@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/ThemeToggle";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   AreaChart,
   Area,
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
+  ResponsiveContainer as RechartsResponsiveContainer,
 } from "recharts";
 
 const demoData = [
@@ -51,6 +52,8 @@ const reviews = [
   },
 ];
 
+const PIE_COLORS = ["#C9A84C", "#00C853", "#7c3aed", "#3B82F6", "#EF4444", "#F59E0B", "#14B8A6"];
+
 function Stars({ count }: { count: number }) {
   return (
     <div className="flex gap-0.5">
@@ -63,6 +66,161 @@ function Stars({ count }: { count: number }) {
         </svg>
       ))}
     </div>
+  );
+}
+
+interface CategorySlice {
+  name: string;
+  value: number;
+}
+
+interface BestScan {
+  name: string;
+  current_value: string;
+  image_url: string;
+}
+
+function MyActivitySection({ userId }: { userId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [totalScans, setTotalScans] = useState(0);
+  const [portfolioValue, setPortfolioValue] = useState(0);
+  const [categoryData, setCategoryData] = useState<CategorySlice[]>([]);
+  const [bestScans, setBestScans] = useState<BestScan[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const { count } = await supabase
+        .from("scan_results")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      setTotalScans(count || 0);
+
+      const { data: scans } = await supabase
+        .from("scan_results")
+        .select("name, current_value, image_url, category")
+        .eq("user_id", userId);
+
+      if (scans && scans.length > 0) {
+        const withValue = scans
+          .map((s) => ({ ...s, numericValue: parseFloat(String(s.current_value).replace(/[^0-9.]/g, "")) }))
+          .filter((s) => !isNaN(s.numericValue));
+
+        const sorted = [...withValue].sort((a, b) => b.numericValue - a.numericValue);
+        setBestScans(sorted.slice(0, 3));
+        setPortfolioValue(withValue.reduce((sum, s) => sum + s.numericValue, 0));
+
+        const byCategory = new Map<string, number>();
+        for (const s of scans) {
+          const cat = s.category || "Other";
+          byCategory.set(cat, (byCategory.get(cat) || 0) + 1);
+        }
+        setCategoryData([...byCategory.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value));
+      }
+      setLoading(false);
+    }
+    load();
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
+        <div className="flex justify-center py-8">
+          <div className="flex gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ width: 8, height: 8, borderRadius: 2, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // No scans yet — clean, encouraging empty state, not a blank/sad dashboard
+  if (totalScans === 0) {
+    return (
+      <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
+        <div className="rounded-2xl p-8 text-center space-y-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          <p className="text-2xl" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
+            Your first scan is waiting
+          </p>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+            Scan anything to start building your collection, unlock achievements, and see your portfolio grow.
+          </p>
+          <Link href="/scan" className="inline-block px-8 py-3 rounded-2xl font-semibold text-sm tracking-wider uppercase transition-opacity hover:opacity-85" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
+            Scan Now
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
+      <h2 className="text-2xl text-center mb-6" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
+        Your Collection
+      </h2>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          <p className="text-3xl font-bold" style={{ color: "var(--color-gold)" }}>{totalScans}</p>
+          <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>Total Scans</p>
+        </div>
+        <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          <p className="text-3xl font-bold" style={{ color: "#00C853" }}>${portfolioValue >= 1000 ? `${(portfolioValue / 1000).toFixed(1)}k` : portfolioValue.toLocaleString()}</p>
+          <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>Portfolio Value</p>
+        </div>
+      </div>
+
+      {categoryData.length > 0 && (
+        <div className="rounded-2xl p-5 mb-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Category Breakdown</p>
+          <div className="flex items-center gap-4">
+            <div style={{ width: 100, height: 100, flexShrink: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={categoryData} dataKey="value" nameKey="name" innerRadius={26} outerRadius={46} paddingAngle={2}>
+                    {categoryData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="none" />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+              {categoryData.slice(0, 5).map((c, i) => (
+                <div key={c.name} className="flex items-center gap-2 min-w-0">
+                  <span className="rounded-full flex-shrink-0" style={{ width: 8, height: 8, background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="text-xs truncate" style={{ color: "var(--color-text-secondary)" }}>{c.name}</span>
+                  <span className="text-xs ml-auto flex-shrink-0" style={{ color: "var(--color-text-muted)" }}>{c.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bestScans.length > 0 && (
+        <div className="rounded-2xl p-5 space-y-3 mb-4" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--color-surface) 70%)", border: "1px solid rgba(201,168,76,0.3)" }}>
+          <p className="text-xs uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>🏆 Your Top Scans</p>
+          {bestScans.map((scan, index) => (
+            <div key={index} className="flex gap-3 items-center">
+              <span className="text-lg flex-shrink-0">{index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}</span>
+              {scan.image_url && <img src={scan.image_url} alt={scan.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />}
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate">{scan.name}</p>
+                <p className="text-sm font-bold" style={{ color: "#00C853" }}>
+                  ${Number(String(scan.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Link href="/scan" className="block w-full text-center py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-85" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
+        Scan Something New
+      </Link>
+    </section>
   );
 }
 
@@ -106,7 +264,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen" style={{ background: "var(--color-black)", color: "var(--color-text-primary)", paddingTop: "env(safe-area-inset-top)" }}>
+    <main className="min-h-screen" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
 
       {/* HERO */}
       <section
@@ -175,26 +333,30 @@ export default function Home() {
         </div>
       </section>
 
-      {/* REVIEWS */}
-      <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
-        <h2 className="text-2xl text-center mb-6" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
-          What People Say
-        </h2>
-        <div className="grid grid-cols-2 gap-3">
-          {reviews.map((r) => (
-            <div key={r.name} className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: "var(--color-brown)", color: "var(--color-gold)", fontSize: 10 }}>
-                  {r.initials}
+      {/* REVIEWS (logged out) or MY ACTIVITY (logged in) */}
+      {user ? (
+        <MyActivitySection userId={user.id} />
+      ) : (
+        <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
+          <h2 className="text-2xl text-center mb-6" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
+            What People Say
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {reviews.map((r) => (
+              <div key={r.name} className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: "var(--color-brown)", color: "var(--color-gold)", fontSize: 10 }}>
+                    {r.initials}
+                  </div>
+                  <span className="text-xs font-semibold" style={{ color: "var(--color-text-primary)" }}>{r.name}</span>
                 </div>
-                <span className="text-xs font-semibold" style={{ color: "var(--color-text-primary)" }}>{r.name}</span>
+                <Stars count={r.stars} />
+                <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>{r.comment}</p>
               </div>
-              <Stars count={r.stars} />
-              <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>{r.comment}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* HOW IT WORKS */}
       <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
@@ -227,20 +389,20 @@ export default function Home() {
           <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: "var(--color-gold)" }}>Example · Nike Air Jordan 1</p>
           <p className="text-xs mb-4" style={{ color: "var(--color-text-faint)" }}>Estimated resale value 2020–2026</p>
           <div style={{ height: 148 }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <RechartsResponsiveContainer width="100%" height="100%">
               <AreaChart data={demoData} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
                 <XAxis dataKey="year" tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
                 <Tooltip contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12 }} labelStyle={{ color: "var(--color-gold)", fontSize: 11 }} itemStyle={{ color: "var(--color-text-primary)" }} />
                 <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1800} />
               </AreaChart>
-            </ResponsiveContainer>
+            </RechartsResponsiveContainer>
           </div>
         </div>
       </section>
 
       {/* CONTACT */}
-<section id="contact" className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
+      <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
         <h2 className="text-2xl text-center mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
           Get in Touch
         </h2>
@@ -286,7 +448,7 @@ export default function Home() {
           Scanify
         </span>
         <div className="flex gap-6 text-xs">
-        <a href="https://www.instagram.com/scanify.world/" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Instagram</a>
+          <a href="https://www.instagram.com/scanify.world/" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Instagram</a>
           <a href="/terms" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Terms of Service</a>
           <a href="/privacy" className="transition-opacity hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>Privacy Policy</a>
         </div>
