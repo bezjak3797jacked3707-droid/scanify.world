@@ -69,6 +69,13 @@ function Stars({ count }: { count: number }) {
   );
 }
 
+function formatCompactCurrency(value: number): string {
+  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
+  return `$${value.toLocaleString()}`;
+}
+
 interface CategorySlice {
   name: string;
   value: number;
@@ -135,7 +142,6 @@ function MyActivitySection({ userId }: { userId: string }) {
     );
   }
 
-  // No scans yet — clean, encouraging empty state, not a blank/sad dashboard
   if (totalScans === 0) {
     return (
       <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
@@ -166,7 +172,7 @@ function MyActivitySection({ userId }: { userId: string }) {
           <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>Total Scans</p>
         </div>
         <div className="rounded-2xl p-4 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-          <p className="text-3xl font-bold" style={{ color: "#00C853" }}>${portfolioValue >= 1000 ? `${(portfolioValue / 1000).toFixed(1)}k` : portfolioValue.toLocaleString()}</p>
+          <p className="text-3xl font-bold" style={{ color: "#00C853" }}>{formatCompactCurrency(portfolioValue)}</p>
           <p className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>Portfolio Value</p>
         </div>
       </div>
@@ -209,7 +215,7 @@ function MyActivitySection({ userId }: { userId: string }) {
               <div className="min-w-0">
                 <p className="font-semibold text-sm truncate">{scan.name}</p>
                 <p className="text-sm font-bold" style={{ color: "#00C853" }}>
-                  ${Number(String(scan.current_value).replace(/[^0-9.]/g, "")).toLocaleString()}
+                  {formatCompactCurrency(Number(String(scan.current_value).replace(/[^0-9.]/g, "")))}
                 </p>
               </div>
             </div>
