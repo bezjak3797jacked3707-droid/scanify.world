@@ -32,7 +32,7 @@ const demoLeaderboard = [
   { medal: "🥉", name: "Air Jordan 1 (1985)", value: "$28,000" },
 ];
 
-const demoPlatforms = ["eBay", "StockX", "Chrono24", "GOAT"];
+const demoPlatforms = ["eBay", "Facebook Marketplace", "Vinted", "StockX", "Chrono24", "GOAT"];
 
 const demoCategoryData = [
   { name: "Cars", value: 4 },
@@ -312,18 +312,12 @@ function TutorialSection() {
 
 function ScrollHint() {
   return (
-    <div className="flex justify-center pb-6 relative z-10">
-      <a href="#tutorial" aria-label="Scroll to see how Scanify works" style={{ animation: "bounce-hint 2s ease-in-out infinite" }}>
+    <div className="flex justify-center pb-8 relative z-10">
+      <a href="#tutorial" aria-label="Scroll to see how Scanify works" className="scroll-hint-arrow">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
           <path d="M6 9l6 6 6-6" stroke="var(--color-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </a>
-      <style jsx>{`
-        @keyframes bounce-hint {
-          0%, 100% { transform: translateY(0); opacity: 0.6; }
-          50% { transform: translateY(6px); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -373,7 +367,7 @@ export default function Home() {
       {/* HERO */}
       <section
         className="relative flex flex-col overflow-hidden"
-        style={{ minHeight: "88vh", background: "radial-gradient(ellipse 140% 60% at 50% 0%, rgba(27,77,62,0.18) 0%, var(--color-black) 65%)" }}
+        style={{ minHeight: "82vh", background: "radial-gradient(ellipse 140% 60% at 50% 0%, rgba(27,77,62,0.18) 0%, var(--color-black) 65%)" }}
       >
         <div className="flex items-center justify-between px-6 pt-8 relative z-10">
           <span className="text-2xl tracking-widest" style={{ color: "var(--color-gold)", fontFamily: "var(--font-heading)", fontWeight: 500 }}>
