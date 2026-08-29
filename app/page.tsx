@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/ThemeToggle";
+import WebOnboarding from "@/components/WebOnboarding";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   AreaChart,
@@ -271,9 +272,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
+      <WebOnboarding />
 
       {/* HERO */}
       <section
+      
         className="relative flex flex-col overflow-hidden"
         style={{ minHeight: "88vh", background: "radial-gradient(ellipse 140% 60% at 50% 0%, rgba(27,77,62,0.18) 0%, var(--color-black) 65%)" }}
       >
