@@ -5,15 +5,15 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/ThemeToggle";
-import WebOnboarding from "@/components/WebOnboarding";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   AreaChart,
   Area,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer as RechartsResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
 } from "recharts";
 
 const demoData = [
@@ -26,49 +26,21 @@ const demoData = [
   { year: "2026", price: 380 },
 ];
 
-const reviews = [
-  {
-    initials: "SM",
-    name: "Sarah M.",
-    stars: 5,
-    comment: "Found a lamp at a garage sale, scanned it on the spot and found out it was a vintage Murano glass piece worth $600. Paid $8 for it.",
-  },
-  {
-    initials: "TM",
-    name: "TOM B.",
-    stars: 5,
-    comment: "Scanned my Jordan 4s — had them listed $120 under value. Changed it immediately.",
-  },
-  {
-    initials: "AT",
-    name: "Amara T.",
-    stars: 4,
-    comment: "Got my MacBook's exact specs and market value in 10 seconds. No more guessing.",
-  },
-  {
-    initials: "DK",
-    name: "Daniel K.",
-    stars: 5,
-    comment: "My girlfriend thinks I'm scanning everything in the house now. She's not wrong.",
-  },
+const demoLeaderboard = [
+  { medal: "🥇", name: "Koenigsegg Jesko", value: "$3,400,000" },
+  { medal: "🥈", name: "Rolex Daytona", value: "$45,000" },
+  { medal: "🥉", name: "Air Jordan 1 (1985)", value: "$28,000" },
 ];
 
-const PIE_COLORS = ["#C9A84C", "#00C853", "#7c3aed", "#3B82F6", "#EF4444", "#F59E0B", "#14B8A6"];
+const demoPlatforms = ["eBay", "StockX", "Chrono24", "GOAT"];
 
-function Stars({ count }: { count: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} width="11" height="11" viewBox="0 0 24 24">
-          <path
-            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            fill={i < count ? "#C9A84C" : "var(--color-border)"}
-          />
-        </svg>
-      ))}
-    </div>
-  );
-}
+const demoCategoryData = [
+  { name: "Cars", value: 4 },
+  { name: "Watches", value: 3 },
+  { name: "Sneakers", value: 2 },
+  { name: "Other", value: 1 },
+];
+const PIE_COLORS = ["#C9A84C", "#00C853", "#7c3aed", "#3B82F6", "#EF4444", "#F59E0B", "#14B8A6"];
 
 function formatCompactCurrency(value: number): string {
   if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
@@ -231,6 +203,131 @@ function MyActivitySection({ userId }: { userId: string }) {
   );
 }
 
+interface TutorialSlideProps {
+  visual: React.ReactNode;
+  text: string;
+}
+
+function TutorialSlide({ visual, text }: TutorialSlideProps) {
+  return (
+    <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+      {visual}
+      <p className="text-lg text-center mt-4" style={{ fontFamily: "var(--font-heading)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+function TutorialSection() {
+  return (
+    <section id="tutorial" className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
+      <h2 className="text-2xl text-center mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
+        How It Works
+      </h2>
+      <p className="text-sm text-center mb-8" style={{ color: "var(--color-text-muted)" }}>
+        Everything Scanify does, in five quick steps.
+      </p>
+
+      <div className="flex flex-col gap-4">
+
+        <TutorialSlide
+          text="Take a photo of anything"
+          visual={
+            <div className="w-full flex items-center justify-center" style={{ height: 120 }}>
+              <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--color-green)" }}>
+                <svg width="34" height="34" viewBox="0 0 36 36" fill="none">
+                  <line x1="18" y1="6" x2="18" y2="30" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" />
+                  <line x1="6" y1="18" x2="30" y2="18" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+          }
+        />
+
+        <TutorialSlide
+          text="We tell you what it's worth"
+          visual={
+            <div style={{ height: 120 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={demoData} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
+                  <XAxis dataKey="year" tick={{ fill: "var(--color-text-muted)", fontSize: 9 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "var(--color-text-muted)", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                  <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.15} dot={false} isAnimationActive animationDuration={1200} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          }
+        />
+
+        <TutorialSlide
+          text="Camera photos can win the leaderboard!"
+          visual={
+            <div className="flex flex-col gap-2" style={{ height: 120, justifyContent: "center" }}>
+              {demoLeaderboard.map((row) => (
+                <div key={row.name} className="flex items-center gap-3 rounded-xl px-3 py-2" style={{ background: "var(--color-thumb)", border: "1px solid var(--color-border)" }}>
+                  <span style={{ fontSize: 16 }}>{row.medal}</span>
+                  <span className="text-xs flex-1 truncate" style={{ color: "var(--color-text-primary)" }}>{row.name}</span>
+                  <span className="text-xs font-bold" style={{ color: "#00C853" }}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+          }
+        />
+
+        <TutorialSlide
+          text="Want to sell it? We'll find the best price"
+          visual={
+            <div className="flex flex-wrap gap-2 items-center justify-center" style={{ height: 120, alignContent: "center" }}>
+              {demoPlatforms.map((p) => (
+                <span key={p} className="px-4 py-2 rounded-full text-xs font-medium" style={{ background: "var(--color-thumb)", border: "1px solid rgba(201,168,76,0.3)", color: "var(--color-gold)" }}>
+                  {p}
+                </span>
+              ))}
+            </div>
+          }
+        />
+
+        <TutorialSlide
+          text="Every scan builds your collection"
+          visual={
+            <div style={{ height: 120 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={demoCategoryData} dataKey="value" nameKey="name" innerRadius={28} outerRadius={48} paddingAngle={3}>
+                    {demoCategoryData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="none" />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          }
+        />
+
+      </div>
+    </section>
+  );
+}
+
+function ScrollHint() {
+  return (
+    <div className="flex justify-center pb-6 relative z-10">
+      <a href="#tutorial" aria-label="Scroll to see how Scanify works" style={{ animation: "bounce-hint 2s ease-in-out infinite" }}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M6 9l6 6 6-6" stroke="var(--color-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </a>
+      <style jsx>{`
+        @keyframes bounce-hint {
+          0%, 100% { transform: translateY(0); opacity: 0.6; }
+          50% { transform: translateY(6px); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function Home() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -272,11 +369,9 @@ export default function Home() {
 
   return (
     <main className="min-h-screen" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
-      <WebOnboarding />
 
       {/* HERO */}
       <section
-      
         className="relative flex flex-col overflow-hidden"
         style={{ minHeight: "88vh", background: "radial-gradient(ellipse 140% 60% at 50% 0%, rgba(27,77,62,0.18) 0%, var(--color-black) 65%)" }}
       >
@@ -306,7 +401,7 @@ export default function Home() {
           </svg>
         </div>
 
-        <div className="flex flex-col items-center justify-center flex-1 px-6 gap-8 relative z-10 pb-10">
+        <div className="flex flex-col items-center justify-center flex-1 px-6 gap-8 relative z-10 pb-4">
           <div className="w-64 h-64 rounded-3xl overflow-hidden">
             <img
               src="/logo.png"
@@ -340,75 +435,11 @@ export default function Home() {
             </Link>
           </div>
         </div>
+
+        {!user && <ScrollHint />}
       </section>
 
-      {/* REVIEWS (logged out) or MY ACTIVITY (logged in) */}
-      {user ? (
-        <MyActivitySection userId={user.id} />
-      ) : (
-        <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
-          <h2 className="text-2xl text-center mb-6" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
-            What People Say
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {reviews.map((r) => (
-              <div key={r.name} className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: "var(--color-brown)", color: "var(--color-gold)", fontSize: 10 }}>
-                    {r.initials}
-                  </div>
-                  <span className="text-xs font-semibold" style={{ color: "var(--color-text-primary)" }}>{r.name}</span>
-                </div>
-                <Stars count={r.stars} />
-                <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>{r.comment}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* HOW IT WORKS */}
-      <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
-        <h2 className="text-2xl text-center mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", fontWeight: 500 }}>
-          How It Works
-        </h2>
-        <p className="text-sm text-center mb-8" style={{ color: "var(--color-text-muted)" }}>
-          Snap a photo. Our AI returns value, history, and specs instantly.
-        </p>
-
-        <div className="flex flex-col gap-3 mb-8">
-          {[
-            { n: "1", title: "Snap or upload", body: "Take a photo of any item — sneakers, electronics, collectibles, art." },
-            { n: "2", title: "AI analyzes", body: "Advanced AI identifies the item and pulls real market data." },
-            { n: "3", title: "See the value", body: "Get current price, 7-year history graph, materials, and full specs." },
-          ].map((s) => (
-            <div key={s.n} className="flex gap-4 items-start rounded-2xl p-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
-                {s.n}
-              </span>
-              <div>
-                <p className="font-semibold text-sm mb-0.5" style={{ color: "var(--color-text-primary)" }}>{s.title}</p>
-                <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>{s.body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-2xl p-4 pt-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-          <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: "var(--color-gold)" }}>Example · Nike Air Jordan 1</p>
-          <p className="text-xs mb-4" style={{ color: "var(--color-text-faint)" }}>Estimated resale value 2020–2026</p>
-          <div style={{ height: 148 }}>
-            <RechartsResponsiveContainer width="100%" height="100%">
-              <AreaChart data={demoData} margin={{ top: 5, right: 10, left: -14, bottom: 0 }}>
-                <XAxis dataKey="year" tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "var(--color-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12 }} labelStyle={{ color: "var(--color-gold)", fontSize: 11 }} itemStyle={{ color: "var(--color-text-primary)" }} />
-                <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2.5} fill="#7c3aed" fillOpacity={0.1} dot={false} isAnimationActive={true} animationDuration={1800} />
-              </AreaChart>
-            </RechartsResponsiveContainer>
-          </div>
-        </div>
-      </section>
+      {user ? <MyActivitySection userId={user.id} /> : <TutorialSection />}
 
       {/* CONTACT */}
       <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
