@@ -8,8 +8,8 @@ import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 300;
 
-// TEMPORARY TEST FLAG — set to false to fully revert to normal behavior
-const TEST_GROUNDING = true;
+// Below this confidence, we retry once with live search grounding enabled
+const GROUNDING_CONFIDENCE_THRESHOLD = 60;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -184,36 +184,7 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
 
-    // TEST: Gemini with search grounding — timed, isolated, falls through safely on any error
-    if (TEST_GROUNDING) {
-      const groundingStart = Date.now();
-      try {
-        console.log("[GROUNDING TEST] Attempting Gemini call with google_search tool...");
-        const groundedModel = genAI.getGenerativeModel({
-          model: "gemini-3.5-flash-lite",
-          tools: [{ googleSearch: {} } as any],
-        });
-        const result = await groundedModel.generateContent([
-          fullPrompt,
-          { inlineData: { mimeType, data: base64Image } },
-        ]);
-        const elapsed = Date.now() - groundingStart;
-        console.log(`[GROUNDING TEST] SUCCESS — took ${elapsed}ms (${(elapsed / 1000).toFixed(2)}s)`);
-
-        const parsed = parseJSON(result.response.text().trim());
-        const contentError = checkContentErrors(parsed);
-        if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
-        parsed._testGroundingMs = elapsed;
-        await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
-        return NextResponse.json(parsed);
-      } catch (err: any) {
-        const elapsed = Date.now() - groundingStart;
-        console.error(`[GROUNDING TEST] FAILED after ${elapsed}ms — syntax likely not supported on this SDK version:`, err?.message);
-        // Falls through to normal flow below — nothing breaks for the user
-      }
-    }
-
-    // PRIMARY: Gemini 3.5 Flash-Lite (normal, no grounding)
+    // PRIMARY: Gemini 3.5 Flash-Lite, fast, no grounding
     try {
       console.log("Trying Gemini 3.5 Flash-Lite...");
       const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
@@ -224,6 +195,34 @@ export async function POST(req: NextRequest) {
       const parsed = parseJSON(result.response.text().trim());
       const contentError = checkContentErrors(parsed);
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+
+      const confidenceNum = parseInt(String(parsed.confidence), 10);
+
+      // If confidence is low, retry once with grounding before accepting the result
+      if (!isNaN(confidenceNum) && confidenceNum < GROUNDING_CONFIDENCE_THRESHOLD) {
+        try {
+          console.log(`Confidence ${confidenceNum} below threshold — retrying with search grounding...`);
+          const groundedModel = genAI.getGenerativeModel({
+            model: "gemini-3.5-flash-lite",
+            tools: [{ googleSearch: {} } as any],
+          });
+          const groundedResult = await groundedModel.generateContent([
+            fullPrompt,
+            { inlineData: { mimeType, data: base64Image } },
+          ]);
+          const groundedParsed = parseJSON(groundedResult.response.text().trim());
+          const groundedContentError = checkContentErrors(groundedParsed);
+          if (!groundedContentError) {
+            console.log("Grounded retry succeeded, using grounded result");
+            await saveResult(groundedParsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
+            return NextResponse.json(groundedParsed);
+          }
+        } catch (groundingErr: any) {
+          console.error("Grounded retry failed, using original fast result instead:", groundingErr?.message);
+          // Falls through to use the original fast result below
+        }
+      }
+
       await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
     } catch (err: any) {
