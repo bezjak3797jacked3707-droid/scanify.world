@@ -62,7 +62,7 @@ export default function AuthButton() {
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `https://www.scanify.world/auth/callback`,
+          redirectTo: `https://www.scanify.world/auth/success`,
           queryParams: {
             prompt: "select_account",
           },
@@ -98,7 +98,7 @@ export default function AuthButton() {
       await supabase.auth.signInWithOAuth({
         provider: "apple",
         options: {
-          redirectTo: `https://www.scanify.world/auth/callback`,
+          redirectTo: `https://www.scanify.world/auth/success`,
         },
       });
     }

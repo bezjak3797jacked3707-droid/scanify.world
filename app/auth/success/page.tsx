@@ -1,26 +1,39 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function AuthSuccessPage() {
-  const router = useRouter();
-
   useEffect(() => {
     async function handleSuccess() {
-      // @ts-ignore
-      if (window.Capacitor?.isNativePlatform?.()) {
-        // @ts-ignore
-        const { Browser } = await import("@capacitor/browser");
-        await Browser.close().catch(() => {});
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error("Session exchange failed:", error.message);
+        }
       }
-      router.push("/");
+
+      // @ts-ignore
+      const isNative = window.Capacitor?.isNativePlatform?.();
+      if (isNative) {
+        try {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.close();
+        } catch (err) {
+          console.error("Browser close error:", err);
+        }
+      }
+
+      window.location.href = "/";
     }
     handleSuccess();
-  }, [router]);
+  }, []);
 
   return (
-    <main className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-black)" }}>
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 gap-2" style={{ background: "var(--color-black)" }}>
       <p style={{ color: "var(--color-gold)" }}>Signing you in…</p>
     </main>
   );
