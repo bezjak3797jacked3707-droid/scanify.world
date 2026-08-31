@@ -8,6 +8,9 @@ import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 300;
 
+// TEMPORARY TEST FLAG — set to false to fully revert to normal behavior
+const TEST_GROUNDING = true;
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -139,7 +142,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parallel image fetch + limit check
     const [imageResponse, profileResult] = await Promise.all([
       fetch(imageUrl),
       userId
@@ -147,7 +149,6 @@ export async function POST(req: NextRequest) {
         : Promise.resolve({ data: null }),
     ]);
 
-    // Check scan limits
     if (userId && profileResult.data) {
       const profile = profileResult.data;
       if (!profile.is_pro) {
@@ -183,10 +184,39 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
 
-    // PRIMARY: Gemini 3.1 Flash-Lite
+    // TEST: Gemini with search grounding — timed, isolated, falls through safely on any error
+    if (TEST_GROUNDING) {
+      const groundingStart = Date.now();
+      try {
+        console.log("[GROUNDING TEST] Attempting Gemini call with google_search tool...");
+        const groundedModel = genAI.getGenerativeModel({
+          model: "gemini-3.5-flash-lite",
+          tools: [{ googleSearch: {} } as any],
+        });
+        const result = await groundedModel.generateContent([
+          fullPrompt,
+          { inlineData: { mimeType, data: base64Image } },
+        ]);
+        const elapsed = Date.now() - groundingStart;
+        console.log(`[GROUNDING TEST] SUCCESS — took ${elapsed}ms (${(elapsed / 1000).toFixed(2)}s)`);
+
+        const parsed = parseJSON(result.response.text().trim());
+        const contentError = checkContentErrors(parsed);
+        if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+        parsed._testGroundingMs = elapsed;
+        await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
+        return NextResponse.json(parsed);
+      } catch (err: any) {
+        const elapsed = Date.now() - groundingStart;
+        console.error(`[GROUNDING TEST] FAILED after ${elapsed}ms — syntax likely not supported on this SDK version:`, err?.message);
+        // Falls through to normal flow below — nothing breaks for the user
+      }
+    }
+
+    // PRIMARY: Gemini 3.5 Flash-Lite (normal, no grounding)
     try {
       console.log("Trying Gemini 3.5 Flash-Lite...");
-const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
+      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
       const result = await model.generateContent([
         fullPrompt,
         { inlineData: { mimeType, data: base64Image } },
@@ -197,7 +227,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
       await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
     } catch (err: any) {
-      console.error("Gemini 3.1 Flash-Lite failed:", err?.message);
+      console.error("Gemini 3.5 Flash-Lite failed:", err?.message);
     }
 
     // FALLBACK 1: Claude Sonnet 4.6
