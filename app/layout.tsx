@@ -3,7 +3,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import OnboardingGate from "@/components/OnboardingGate";
-
+import { Analytics } from "@vercel/analytics/next";
 const cormorant = Cormorant_Garamond({
   variable: "--font-heading",
   subsets: ["latin"],
@@ -50,11 +50,12 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon-32x32.png" />
       </head>
       <body className="bg-[#0a0a0a] flex justify-center">
-  <OnboardingGate />
+      <OnboardingGate />
   <div className="w-full max-w-md min-h-screen bg-[#111111] border-x border-[#1e1e1e] relative pb-24">
     {children}
     <BottomNav />
   </div>
+  <Analytics />
 </body>
     </html>
   );
