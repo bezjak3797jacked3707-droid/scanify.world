@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import OnboardingGate from "@/components/OnboardingGate";
+import { Analytics } from "@vercel/analytics/next";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-heading",
@@ -55,6 +56,7 @@ export default function RootLayout({
     {children}
     <BottomNav />
   </div>
+  <Analytics />
 </body>
     </html>
   );
