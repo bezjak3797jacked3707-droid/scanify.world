@@ -37,8 +37,15 @@ async function saveResult(parsed: any, imageUrl: string, userId: string | null, 
   }
 }
 
+// More resilient JSON parsing: strips markdown fences, then extracts the first
+// {...} block if the model added any stray text before/after the JSON.
 function parseJSON(text: string) {
-  const clean = text.replace(/```json|```/g, "").trim();
+  let clean = text.replace(/```json|```/g, "").trim();
+  const firstBrace = clean.indexOf("{");
+  const lastBrace = clean.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    clean = clean.slice(firstBrace, lastBrace + 1);
+  }
   return JSON.parse(clean);
 }
 
@@ -183,10 +190,13 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
 
-    // PRIMARY: Gemini 3.5 Flash-Lite, fast, no grounding
+    // PRIMARY: Gemini 3.5 Flash-Lite, fast, no grounding, low temperature for consistent answers
     try {
       console.log("Trying Gemini 3.5 Flash-Lite...");
-      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3.5-flash-lite",
+        generationConfig: { temperature: 0.2 },
+      });
       const result = await model.generateContent([
         fullPrompt,
         { inlineData: { mimeType, data: base64Image } },
@@ -202,6 +212,7 @@ export async function POST(req: NextRequest) {
           console.log(`Confidence ${confidenceNum} below threshold — retrying with search grounding...`);
           const groundedModel = genAI.getGenerativeModel({
             model: "gemini-3.5-flash-lite",
+            generationConfig: { temperature: 0.2 },
             tools: [{ googleSearch: {} } as any],
           });
           const groundedResult = await groundedModel.generateContent([
@@ -232,6 +243,7 @@ export async function POST(req: NextRequest) {
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 1000,
+        temperature: 0.2,
         system: [
           {
             type: "text",
@@ -270,6 +282,7 @@ export async function POST(req: NextRequest) {
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         max_tokens: 1000,
+        temperature: 0.2,
         messages: [
           { role: "system", content: systemPrompt },
           {
