@@ -8,6 +8,9 @@ import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 300;
 
+// TEMPORARY TEST FLAG — set to false to fully disable
+const TEST_LUNA = true;
+
 const GROUNDING_CONFIDENCE_THRESHOLD = 60;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -182,6 +185,49 @@ export async function POST(req: NextRequest) {
       : "Analyze this item and return the JSON.";
 
     const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
+
+    // TEST: GPT-5.6 Luna — isolated, timed, falls through safely on any error
+    if (TEST_LUNA) {
+      const lunaStart = Date.now();
+      try {
+        console.log("[LUNA TEST] Attempting gpt-5.6-luna (model ID unconfirmed, best guess from naming pattern)...");
+        const response = await openai.chat.completions.create({
+          model: "gpt-5.6-luna",
+          max_tokens: 1000,
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64Image}`,
+                    detail: "high",
+                  },
+                },
+                { type: "text", text: userMessage },
+              ],
+            },
+          ],
+        });
+        const elapsed = Date.now() - lunaStart;
+        const text = response.choices[0].message.content?.trim() || "";
+        console.log(`[LUNA TEST] SUCCESS — took ${elapsed}ms (${(elapsed / 1000).toFixed(2)}s)`);
+        console.log(`[LUNA TEST] Raw response: ${text}`);
+
+        const parsed = parseJSON(text);
+        const contentError = checkContentErrors(parsed);
+        if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
+        parsed._testLunaMs = elapsed;
+        await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
+        return NextResponse.json(parsed);
+      } catch (err: any) {
+        const elapsed = Date.now() - lunaStart;
+        console.error(`[LUNA TEST] FAILED after ${elapsed}ms — model ID may be wrong:`, err?.message);
+        // Falls through to normal flow below — nothing breaks for the user
+      }
+    }
 
     // PRIMARY: Gemini 3.5 Flash-Lite, fast, no grounding
     try {
