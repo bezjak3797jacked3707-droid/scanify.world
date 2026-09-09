@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
         console.log("[LUNA TEST] Attempting gpt-5.6-luna (model ID unconfirmed, best guess from naming pattern)...");
         const response = await openai.chat.completions.create({
           model: "gpt-5.6-luna",
-          max_tokens: 1000,
+          max_completion_tokens: 1000,
           messages: [
             { role: "system", content: systemPrompt },
             {
