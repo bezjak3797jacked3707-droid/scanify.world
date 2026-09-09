@@ -49,7 +49,7 @@ function checkContentErrors(parsed: any) {
   return null;
 }
 
-const baseSystemPrompt = `You are the world's most precise AI appraiser. You analyze images of physical objects and return accurate identifications and 2026 market valuations.
+const systemPrompt = `You are the world's most precise AI appraiser. You analyze images of physical objects and return accurate identifications and 2026 market valuations.
 
 You specialize in:
 - Exotic and luxury cars (Lamborghini, Ferrari, Koenigsegg, Bugatti, McLaren, Porsche, Rolls-Royce, Pagani, and all others)
@@ -85,9 +85,6 @@ Sneakers: brand, exact model, colorway name, release year, collaboration
 Electronics: brand, exact model, generation, storage, color
 Bags: brand, model name, size, leather type, color, hardware color
 
-CONFIDENCE — be honest, not performative:
-Your confidence score must reflect your genuine certainty, not a default high number. If you recognize the item clearly and are certain of the exact make, model, and variant, use 80-100. If you have a reasonable guess but real uncertainty about the exact variant, year, or a rare/unfamiliar item, use 40-70. If you are largely guessing, use below 40. An honest 45% confidence on a correct-direction guess is far more useful than a false 95% confidence on a wrong answer. Never inflate confidence to seem more helpful — a lower honest score allows the item to be double-checked, which benefits the user far more than false certainty.
-
 PRICING — use real 2026 secondary market values:
 - Lamborghini Revuelto: $700,000–$950,000
 - Lamborghini Huracán base: $180,000–$220,000
@@ -104,14 +101,7 @@ PRICING — use real 2026 secondary market values:
 - iPhone 15 Pro Max 256GB used: $700–$900
 - Hermès Birkin 25 Togo: $25,000–$40,000
 
-For all other items: sneakers → StockX/GOAT averages. Watches → Chrono24. Cars → private party. Electronics → eBay sold. Art → auction results.`;
-
-const groundedAddition = `
-
-LIVE SEARCH IS ACTIVE FOR THIS REQUEST:
-You have real web search available right now. Use it actively — search for the item's exact name, recent release info, and current 2026 market pricing before finalizing your answer. Prioritize what you find in search over your own trained knowledge, especially for anything released recently or with a fast-moving price. If search confirms your identification, raise your confidence accordingly. If search reveals you were wrong, correct your answer entirely rather than partially blending the two.`;
-
-const responseFormatInstructions = `
+For all other items: sneakers → StockX/GOAT averages. Watches → Chrono24. Cars → private party. Electronics → eBay sold. Art → auction results.
 
 RESPONSE FORMAT — return only valid JSON, no markdown, no explanation:
 {
@@ -133,10 +123,6 @@ RESPONSE FORMAT — return only valid JSON, no markdown, no explanation:
     {"year": "2026", "price": 0}
   ]
 }`;
-
-function buildSystemPrompt(grounded: boolean) {
-  return `${baseSystemPrompt}${grounded ? groundedAddition : ""}${responseFormatInstructions}`;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -195,13 +181,14 @@ export async function POST(req: NextRequest) {
       ? `${noteHint}\n\nAnalyze this item and return the JSON.`
       : "Analyze this item and return the JSON.";
 
+    const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
+
     // PRIMARY: Gemini 3.5 Flash-Lite, fast, no grounding
     try {
       console.log("Trying Gemini 3.5 Flash-Lite...");
-      const fastPrompt = `${buildSystemPrompt(false)}\n\n${userMessage}`;
       const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
       const result = await model.generateContent([
-        fastPrompt,
+        fullPrompt,
         { inlineData: { mimeType, data: base64Image } },
       ]);
       const parsed = parseJSON(result.response.text().trim());
@@ -213,13 +200,12 @@ export async function POST(req: NextRequest) {
       if (!isNaN(confidenceNum) && confidenceNum < GROUNDING_CONFIDENCE_THRESHOLD) {
         try {
           console.log(`Confidence ${confidenceNum} below threshold — retrying with search grounding...`);
-          const groundedPrompt = `${buildSystemPrompt(true)}\n\n${userMessage}`;
           const groundedModel = genAI.getGenerativeModel({
             model: "gemini-3.5-flash-lite",
             tools: [{ googleSearch: {} } as any],
           });
           const groundedResult = await groundedModel.generateContent([
-            groundedPrompt,
+            fullPrompt,
             { inlineData: { mimeType, data: base64Image } },
           ]);
           const groundedParsed = parseJSON(groundedResult.response.text().trim());
@@ -243,14 +229,13 @@ export async function POST(req: NextRequest) {
     // FALLBACK 1: Claude Sonnet 4.6
     try {
       console.log("Trying Claude Sonnet 4.6...");
-      const fallbackPrompt = buildSystemPrompt(false);
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 1000,
         system: [
           {
             type: "text",
-            text: fallbackPrompt,
+            text: systemPrompt,
             cache_control: { type: "ephemeral" },
           },
         ],
@@ -282,12 +267,11 @@ export async function POST(req: NextRequest) {
     // FALLBACK 2: GPT-4o
     try {
       console.log("Trying GPT-4o...");
-      const fallbackPrompt = buildSystemPrompt(false);
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         max_tokens: 1000,
         messages: [
-          { role: "system", content: fallbackPrompt },
+          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
