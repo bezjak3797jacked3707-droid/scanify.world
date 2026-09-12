@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { extractOutline } from "@/lib/segmentation";
 import type { User } from "@supabase/supabase-js";
 
 async function compressImage(file: File): Promise<File> {
@@ -83,17 +82,7 @@ export default function ScanPage() {
     setError("");
     e.target.value = "";
 
-    // Fire-and-forget: extract a rough outline for the scanning animation.
-    // Runs in the background, never awaited here — real segmentation takes
-    // well under a second, but even if it were slower, it must never delay
-    // the upload or the scan itself. Cleared here so a slow/failed
-    // extraction from a previous photo never leaks into this one.
-    sessionStorage.removeItem("scanify_outline");
-    extractOutline(selected).then((points) => {
-      if (points) {
-        sessionStorage.setItem("scanify_outline", JSON.stringify(points));
-      }
-    });
+    
 
     setIsPreUploading(true);
     try {
