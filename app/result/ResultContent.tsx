@@ -135,7 +135,8 @@ function LoadingMessage() {
 
 function ScanningOverlay() {
   const points = [
-    [120, 60], [280, 55], [340, 150], [270, 240], [130, 245], [65, 145],
+    [150, 45], [250, 45], [310, 100], [330, 170], [280, 250],
+    [200, 270], [120, 250], [70, 170], [90, 100],
   ];
   const pointsAttr = points.map(([x, y]) => `${x},${y}`).join(" ");
 
