@@ -8,12 +8,21 @@ import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 300;
 
+const GROUNDING_CONFIDENCE_THRESHOLD = 60;
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// More resilient JSON parsing: strips markdown fences, then extracts the first
+// {...} block if the model added any stray text before/after the JSON.
 function parseJSON(text: string) {
-  const clean = text.replace(/```json|```/g, "").trim();
+  let clean = text.replace(/```json|```/g, "").trim();
+  const firstBrace = clean.indexOf("{");
+  const lastBrace = clean.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    clean = clean.slice(firstBrace, lastBrace + 1);
+  }
   return JSON.parse(clean);
 }
 
@@ -69,7 +78,7 @@ Respond with exactly {"error": "buildings_not_supported"} for buildings or fixed
 Respond with exactly {"error": "image_unclear"} if the image is too blurry or dark to identify.
 
 IDENTIFICATION:
-Examine every visible detail: brand logos, model numbers, colorways, condition, wear patterns, tags, packaging, accessories. Identify the most specific version of the item possible.
+Examine every visible detail: brand logos, model numbers, colorways, condition, wear patterns, tags, packaging, accessories. Identify the most specific version of the item possible. Never default to a well-known or frequently-referenced model just because an item is rare, unusual, or hard to place — if the visible details don't clearly match a specific model you can confidently name, identify the closest accurate description you can support with visible evidence, at lower confidence, rather than confidently naming a more famous item.
 
 For sneakers: exact colorway, release year, size if visible.
 For electronics: exact model, storage, color, generation.
@@ -110,6 +119,60 @@ Platform notes:
 - Chrono24: watch specialists, strong prices
 
 Always respond with only valid JSON. No explanation, no markdown, no backticks.`;
+}
+
+function buildUserMessage(platformHint: string, preferredPlatformJson: string) {
+  return `${platformHint ? platformHint + "\n\n" : ""}Analyze this item for resale and return this exact JSON structure. Fill the fields in this exact order — the early fields must genuinely inform "name", not be filled in after you've already decided on it:
+
+{
+  "visibleText": "Transcribe every visible marking, code, stamp, tag, serial number, badge text, or label exactly as it appears. Write 'none clearly visible' if nothing readable is present.",
+  "evidence": "State which specific visible details led to your identification — cite exact text from visibleText if any exists, or specific shape/proportion/hardware details if no text is visible. Be concrete, not 'it looks like a...'",
+  "evidenceFound": "true if your identification is grounded in actual text, numbers, or unambiguous markings visible in the image. false if you are relying primarily on general shape, silhouette, or resemblance to a known item without confirming text or markings.",
+  "confidence": "0-100 as number only, reflecting genuine certainty",
+  "name": "precise product name with exact model, variant, colorway, year, and condition — determined from the evidence above",
+  "category": "specific product category",
+  "condition": "condition assessment: New, Like New, Good, Fair, or Poor",
+  "originalPrice": "original retail price as number only",
+  "quickSalePrice": "quick sale price within 48 hours as number only",
+  "bestPrice": "best price if willing to wait 2-4 weeks as number only",
+  "platforms": [
+    {
+      "name": "eBay",
+      "averagePrice": "average sold price as number only",
+      "highestSold": "highest recent sold price as number only",
+      "lowestSold": "lowest recent sold price as number only",
+      "demandLevel": "High, Medium or Low",
+      "tips": "one specific actionable tip for this item on eBay"
+    },
+    {
+      "name": "Facebook Marketplace",
+      "averagePrice": "average local sale price as number only",
+      "highestSold": "highest local sold price as number only",
+      "lowestSold": "lowest local sold price as number only",
+      "demandLevel": "High, Medium or Low",
+      "tips": "one specific actionable tip for this item locally"
+    },
+    {
+      "name": "Craigslist",
+      "averagePrice": "average price as number only",
+      "highestSold": "highest price as number only",
+      "lowestSold": "lowest price as number only",
+      "demandLevel": "High, Medium or Low",
+      "tips": "one specific actionable tip for Craigslist"
+    }${preferredPlatformJson}
+  ],
+  "priceHistory": [
+    {"year": "2020", "price": 0},
+    {"year": "2021", "price": 0},
+    {"year": "2022", "price": 0},
+    {"year": "2023", "price": 0},
+    {"year": "2024", "price": 0},
+    {"year": "2025", "price": 0},
+    {"year": "2026", "price": 0}
+  ],
+  "sellingTips": "2-3 specific actionable tips for selling this exact item for maximum profit",
+  "bestTimeToSell": "specific timing advice based on market trends and seasonality for this item"
+}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -171,8 +234,6 @@ export async function POST(req: NextRequest) {
       ? `The user prefers selling on ${preferredPlatform}. Always include this platform in the results and prioritize its data.`
       : "";
 
-    const systemPrompt = buildSystemPrompt(useDeepResearch);
-
     const preferredPlatformJson = preferredPlatform && !["eBay", "Facebook Marketplace", "Craigslist"].includes(preferredPlatform)
       ? `,
     {
@@ -185,63 +246,17 @@ export async function POST(req: NextRequest) {
     }`
       : "";
 
-    const userMessage = `${platformHint ? platformHint + "\n\n" : ""}Analyze this item for resale and return this exact JSON structure:
+    const userMessage = buildUserMessage(platformHint, preferredPlatformJson);
 
-{
-  "name": "precise product name with exact model, variant, colorway, year, and condition",
-  "category": "specific product category",
-  "condition": "condition assessment: New, Like New, Good, Fair, or Poor",
-  "originalPrice": "original retail price as number only",
-  "quickSalePrice": "quick sale price within 48 hours as number only",
-  "bestPrice": "best price if willing to wait 2-4 weeks as number only",
-  "platforms": [
-    {
-      "name": "eBay",
-      "averagePrice": "average sold price as number only",
-      "highestSold": "highest recent sold price as number only",
-      "lowestSold": "lowest recent sold price as number only",
-      "demandLevel": "High, Medium or Low",
-      "tips": "one specific actionable tip for this item on eBay"
-    },
-    {
-      "name": "Facebook Marketplace",
-      "averagePrice": "average local sale price as number only",
-      "highestSold": "highest local sold price as number only",
-      "lowestSold": "lowest local sold price as number only",
-      "demandLevel": "High, Medium or Low",
-      "tips": "one specific actionable tip for this item locally"
-    },
-    {
-      "name": "Craigslist",
-      "averagePrice": "average price as number only",
-      "highestSold": "highest price as number only",
-      "lowestSold": "lowest price as number only",
-      "demandLevel": "High, Medium or Low",
-      "tips": "one specific actionable tip for Craigslist"
-    }${preferredPlatformJson}
-  ],
-  "priceHistory": [
-    {"year": "2020", "price": 0},
-    {"year": "2021", "price": 0},
-    {"year": "2022", "price": 0},
-    {"year": "2023", "price": 0},
-    {"year": "2024", "price": 0},
-    {"year": "2025", "price": 0},
-    {"year": "2026", "price": 0}
-  ],
-  "sellingTips": "2-3 specific actionable tips for selling this exact item for maximum profit",
-  "bestTimeToSell": "specific timing advice based on market trends and seasonality for this item"
-}`;
-
-    const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
-
-    // DEEP RESEARCH PATH: Claude Sonnet with real web search
+    // DEEP RESEARCH PATH: Claude Sonnet with real web search (Business tier only)
     if (useDeepResearch) {
       try {
         console.log("Resell: Deep Research mode via Claude Sonnet + web_search...");
+        const systemPrompt = buildSystemPrompt(true);
         const response = await anthropic.messages.create({
           model: "claude-sonnet-4-6",
           max_tokens: 2000,
+          temperature: 0.2,
           system: systemPrompt,
           tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 } as any],
           messages: [{
@@ -272,16 +287,57 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // FAST PATH — PRIMARY: Gemini 3.1 Flash-Lite
+    // FAST PATH — available to everyone. Gemini 3.5 Flash-Lite, with automatic
+    // grounding retry when evidence is weak — the same free safety net the
+    // main scan page has, not gated behind Business/Deep Research.
+    const fastSystemPrompt = buildSystemPrompt(false);
+    const fullPrompt = `${fastSystemPrompt}\n\n${userMessage}`;
+
     try {
-      console.log("Resell: Trying Gemini 3.1 Flash-Lite (fast estimate)...");
-      const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+      console.log("Resell: Trying Gemini 3.5 Flash-Lite (fast estimate)...");
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3.5-flash-lite",
+        generationConfig: { temperature: 0.2 },
+      });
       const result = await model.generateContent([
         fullPrompt,
         { inlineData: { mimeType, data: base64Image } },
       ]);
       const parsed = parseJSON(result.response.text().trim());
       if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
+
+      const confidenceNum = parseInt(String(parsed.confidence), 10);
+      const hasEvidence = parsed.evidenceFound === true || parsed.evidenceFound === "true";
+      const lowConfidence = !isNaN(confidenceNum) && confidenceNum < GROUNDING_CONFIDENCE_THRESHOLD;
+
+      if (!hasEvidence || lowConfidence) {
+        try {
+          console.log(
+            !hasEvidence
+              ? "Resell: No concrete identifying evidence found — retrying with search grounding..."
+              : `Resell: Confidence ${confidenceNum} below threshold — retrying with search grounding...`
+          );
+          const groundedModel = genAI.getGenerativeModel({
+            model: "gemini-3.5-flash-lite",
+            generationConfig: { temperature: 0.2 },
+            tools: [{ googleSearch: {} } as any],
+          });
+          const groundedResult = await groundedModel.generateContent([
+            fullPrompt,
+            { inlineData: { mimeType, data: base64Image } },
+          ]);
+          const groundedParsed = parseJSON(groundedResult.response.text().trim());
+          if (!groundedParsed.error) {
+            console.log("Resell: Grounded retry succeeded, using grounded result");
+            groundedParsed.isDeepResearch = true; // honest: a real live search did inform this result
+            if (userId) await saveResellResult(groundedParsed, imageUrl, userId, true);
+            return NextResponse.json(groundedParsed);
+          }
+        } catch (groundingErr: any) {
+          console.error("Resell: Grounded retry failed, using original fast result instead:", groundingErr?.message);
+        }
+      }
+
       parsed.isDeepResearch = false;
       if (userId) await saveResellResult(parsed, imageUrl, userId, false);
       return NextResponse.json(parsed);
@@ -295,7 +351,8 @@ export async function POST(req: NextRequest) {
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 1200,
-        system: systemPrompt,
+        temperature: 0.2,
+        system: fastSystemPrompt,
         messages: [{
           role: "user",
           content: [
@@ -327,9 +384,10 @@ export async function POST(req: NextRequest) {
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         max_tokens: 1200,
+        temperature: 0.2,
         messages: [{
           role: "system",
-          content: systemPrompt,
+          content: fastSystemPrompt,
         }, {
           role: "user",
           content: [
