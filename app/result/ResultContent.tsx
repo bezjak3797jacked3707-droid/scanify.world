@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import ScanningOverlay from "@/components/ScanningOverlay";
 import { supabase } from "@/lib/supabase";
 import {
   AreaChart,
@@ -130,61 +131,6 @@ function LoadingMessage() {
     <p className="text-sm uppercase tracking-widest transition-opacity duration-300" style={{ color: "var(--color-gold)", opacity: visible ? 1 : 0 }}>
       {LOADING_MESSAGES[index]}
     </p>
-  );
-}
-
-function ScanningOverlay() {
-  const points = [
-    [150, 45], [250, 45], [310, 100], [330, 170], [280, 250],
-    [200, 270], [120, 250], [70, 170], [90, 100],
-  ];
-  const pointsAttr = points.map(([x, y]) => `${x},${y}`).join(" ");
-
-  return (
-    <div className="absolute inset-0 pointer-events-none" style={{ overflow: "hidden" }}>
-      <span className="absolute top-3 left-3 w-8 h-8 border-t-[3px] border-l-[3px] rounded-tl-lg" style={{ borderColor: "#7c3aed" }} />
-      <span className="absolute top-3 right-3 w-8 h-8 border-t-[3px] border-r-[3px] rounded-tr-lg" style={{ borderColor: "#7c3aed" }} />
-      <span className="absolute bottom-3 left-3 w-8 h-8 border-b-[3px] border-l-[3px] rounded-bl-lg" style={{ borderColor: "#7c3aed" }} />
-      <span className="absolute bottom-3 right-3 w-8 h-8 border-b-[3px] border-r-[3px] rounded-br-lg" style={{ borderColor: "#7c3aed" }} />
-
-      <div
-        className="absolute left-0 right-0"
-        style={{
-          top: "-5%",
-          height: 3,
-          background: "linear-gradient(90deg, transparent 0%, #7c3aed 20%, #a78bfa 50%, #7c3aed 80%, transparent 100%)",
-          boxShadow: "0 0 12px 3px rgba(124,58,237,0.8), 0 0 24px 6px rgba(124,58,237,0.4)",
-          animation: "scan-sweep 2.4s ease-in-out infinite",
-        }}
-      />
-
-      <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full">
-        <polygon points={pointsAttr} fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeOpacity="0.4" />
-        <polygon
-          points={pointsAttr}
-          fill="none"
-          stroke="#a78bfa"
-          strokeWidth="2"
-          strokeDasharray="14 10"
-          style={{ animation: "outline-trace 1.8s linear infinite" }}
-        />
-        {points.map(([cx, cy], i) => (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r="4"
-            fill="#7c3aed"
-            style={{
-              filter: "drop-shadow(0 0 4px rgba(124,58,237,0.9))",
-              transformBox: "fill-box",
-              transformOrigin: "center",
-              animation: `scan-dot-pulse 1.6s ease-in-out ${i * 0.2}s infinite`,
-            }}
-          />
-        ))}
-      </svg>
-    </div>
   );
 }
 
@@ -384,11 +330,10 @@ export default function ResultContent() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6" style={{ background: "var(--color-black)" }}>
         {imageUrlState && !isLoadingFromHistory ? (
-          <div className="relative w-full max-w-sm aspect-[4/3] rounded-2xl overflow-hidden">
-            <img src={imageUrlState} alt="Scanning..." className="w-full h-full object-cover" style={{ filter: "brightness(0.75)" }} />
-            <ScanningOverlay />
-          </div>
-        ) : (
+  <div className="relative w-full max-w-sm aspect-[4/3]">
+    <ScanningOverlay imageUrl={imageUrlState} />
+  </div>
+) : (
           <div className="flex gap-3 items-end justify-center" style={{ height: 48 }}>
             {[0, 1, 2, 3].map((i) => (
               <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />

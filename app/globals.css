@@ -144,3 +144,18 @@ h1, h2, h3, h4, h5, h6 {
   0%, 100% { opacity: 0.2; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.3); }
 }
+@keyframes scan-stitch {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes scan-node-pop {
+  0% { opacity: 0; transform: scale(0); }
+  60% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scan-travel {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -1000; }
+}
