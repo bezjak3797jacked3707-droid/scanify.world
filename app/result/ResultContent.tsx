@@ -134,13 +134,10 @@ function LoadingMessage() {
 }
 
 function ScanningOverlay() {
-  const dotPositions = [
-    { top: "15%", left: "20%" },
-    { top: "25%", left: "75%" },
-    { top: "55%", left: "12%" },
-    { top: "65%", left: "82%" },
-    { top: "80%", left: "40%" },
+  const points = [
+    [120, 60], [280, 55], [340, 150], [270, 240], [130, 245], [65, 145],
   ];
+  const pointsAttr = points.map(([x, y]) => `${x},${y}`).join(" ");
 
   return (
     <div className="absolute inset-0 pointer-events-none" style={{ overflow: "hidden" }}>
@@ -152,28 +149,40 @@ function ScanningOverlay() {
       <div
         className="absolute left-0 right-0"
         style={{
+          top: "-5%",
           height: 3,
           background: "linear-gradient(90deg, transparent 0%, #7c3aed 20%, #a78bfa 50%, #7c3aed 80%, transparent 100%)",
           boxShadow: "0 0 12px 3px rgba(124,58,237,0.8), 0 0 24px 6px rgba(124,58,237,0.4)",
-          animation: "scan-sweep 2.2s ease-in-out infinite",
+          animation: "scan-sweep 2.4s ease-in-out infinite",
         }}
       />
 
-      {dotPositions.map((pos, i) => (
-        <span
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            top: pos.top,
-            left: pos.left,
-            width: 6,
-            height: 6,
-            background: "#7c3aed",
-            boxShadow: "0 0 8px 2px rgba(124,58,237,0.7)",
-            animation: `scan-dot-pulse 1.6s ease-in-out ${i * 0.3}s infinite`,
-          }}
+      <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full">
+        <polygon points={pointsAttr} fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeOpacity="0.4" />
+        <polygon
+          points={pointsAttr}
+          fill="none"
+          stroke="#a78bfa"
+          strokeWidth="2"
+          strokeDasharray="14 10"
+          style={{ animation: "outline-trace 1.8s linear infinite" }}
         />
-      ))}
+        {points.map(([cx, cy], i) => (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r="4"
+            fill="#7c3aed"
+            style={{
+              filter: "drop-shadow(0 0 4px rgba(124,58,237,0.9))",
+              transformBox: "fill-box",
+              transformOrigin: "center",
+              animation: `scan-dot-pulse 1.6s ease-in-out ${i * 0.2}s infinite`,
+            }}
+          />
+        ))}
+      </svg>
     </div>
   );
 }

@@ -130,10 +130,15 @@ h1, h2, h3, h4, h5, h6 {
   animation: bounce-hint 1.6s ease-in-out infinite;
 }
 @keyframes scan-sweep {
-  0% { transform: translateY(-10%); opacity: 0; }
+  0% { top: -5%; opacity: 0; }
   10% { opacity: 1; }
   90% { opacity: 1; }
-  100% { transform: translateY(110%); opacity: 0; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes outline-trace {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -240; }
 }
 
 @keyframes scan-dot-pulse {
