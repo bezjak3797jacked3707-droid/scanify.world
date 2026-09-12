@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Three generic silhouette variants (Option B) — picked by the photo's own
-// aspect ratio, not the fixed 4:3 container. Coordinates are normalized to a
-// 0–100 viewBox so the path scales cleanly to any screen size.
+// Three generic silhouette variants (Option B) — fallback for when real
+// outline detection isn't available yet, or found too little contrast
+// against the background. Picked by the photo's own aspect ratio.
 const SHAPE_WIDE = [
-  [18, 55], [22, 42], [30, 34], [42, 30], [50, 29], [58, 30], [66, 33],
-  [74, 38], [80, 46], [84, 55], [86, 62], [82, 66], [78, 68], [70, 70],
-  [70, 74], [64, 76], [60, 74], [58, 70], [42, 70], [40, 74], [34, 76],
-  [30, 74], [30, 70], [22, 68], [17, 63],
+  [12, 74], [10, 68], [16, 62], [26, 58], [32, 48], [38, 38], [44, 33],
+  [52, 31], [60, 32], [66, 37], [70, 45], [76, 55], [84, 60], [90, 66],
+  [92, 74], [92, 80], [84, 82], [76, 82], [70, 80], [55, 80], [40, 80],
+  [30, 82], [20, 82], [12, 80],
 ];
 
 const SHAPE_TALL = [
@@ -43,10 +43,29 @@ interface ScanningOverlayProps {
 
 export default function ScanningOverlay({ imageUrl }: ScanningOverlayProps) {
   const [variant, setVariant] = useState<Variant>("round");
+  const [realPoints, setRealPoints] = useState<number[][] | null>(null);
   const [ready, setReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const pathRef = useRef<SVGPathElement>(null);
   const [pathLength, setPathLength] = useState(0);
+
+  useEffect(() => {
+    // Pick up a real, already-extracted outline if the background detection
+    // (triggered the moment the photo was selected on the scan page) finished
+    // in time. If it's missing, malformed, or never ran, fall back silently
+    // to the generic silhouette — this must never throw or block rendering.
+    try {
+      const stored = sessionStorage.getItem("scanify_outline");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRealPoints(parsed);
+        }
+      }
+    } catch {
+      // Ignore — generic fallback below handles this case
+    }
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -60,7 +79,7 @@ export default function ScanningOverlay({ imageUrl }: ScanningOverlayProps) {
     if (pathRef.current) {
       setPathLength(pathRef.current.getTotalLength());
     }
-  }, [variant]);
+  }, [variant, realPoints]);
 
   function handleImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const img = e.currentTarget;
@@ -68,10 +87,11 @@ export default function ScanningOverlay({ imageUrl }: ScanningOverlayProps) {
     setReady(true);
   }
 
-  const points = variant === "wide" ? SHAPE_WIDE : variant === "tall" ? SHAPE_TALL : SHAPE_ROUND;
+  // Real detected outline takes priority whenever it's available.
+  const points = realPoints ?? (variant === "wide" ? SHAPE_WIDE : variant === "tall" ? SHAPE_TALL : SHAPE_ROUND);
   const pathD = pointsToPath(points);
   const nodeCount = points.length;
-  const drawDuration = 1.6; // seconds for the initial stitch-in
+  const drawDuration = 1.6;
   const staggerStep = drawDuration / nodeCount;
 
   return (
@@ -121,7 +141,6 @@ export default function ScanningOverlay({ imageUrl }: ScanningOverlayProps) {
             </filter>
           </defs>
 
-          {/* Base outline — always visible once drawn, static during the idle loop */}
           <path
             ref={pathRef}
             d={pathD}
@@ -143,7 +162,6 @@ export default function ScanningOverlay({ imageUrl }: ScanningOverlayProps) {
             }
           />
 
-          {/* Traveling glow sweep — the continuous idle-loop phase, starts after the stitch-in finishes */}
           {!reducedMotion && pathLength > 0 && (
             <path
               d={pathD}
@@ -154,12 +172,11 @@ export default function ScanningOverlay({ imageUrl }: ScanningOverlayProps) {
               filter="url(#scan-glow)"
               style={{
                 strokeDasharray: `${pathLength * 0.12} ${pathLength * 0.88}`,
-                animation: `scan-travel 2.6s linear ${drawDuration}s infinite`,
+                animation: `scan-travel 5s linear ${drawDuration}s infinite`,
               }}
             />
           )}
 
-          {/* Vertex nodes — pop in one by one with a slight overshoot */}
           {points.map(([x, y], i) => (
             <circle
               key={i}

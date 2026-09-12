@@ -243,6 +243,7 @@ export default function ResultContent() {
             setTimeout(() => setShowConfetti(true), 200);
             setTimeout(() => setShowConfetti(false), 1200);
             setTimeout(() => setChartDrawn(true), 1700);
+            sessionStorage.removeItem("scanify_outline");
             setLoading(false);
           }
         } catch {
@@ -282,6 +283,7 @@ export default function ResultContent() {
         setTimeout(() => setShowConfetti(true), 200);
         setTimeout(() => setShowConfetti(false), 1200);
         setTimeout(() => setChartDrawn(true), 1700);
+        sessionStorage.removeItem("scanify_outline");
       } catch {
         setError("Could not analyze image. Please try again.");
       } finally {
@@ -330,10 +332,10 @@ export default function ResultContent() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6" style={{ background: "var(--color-black)" }}>
         {imageUrlState && !isLoadingFromHistory ? (
-  <div className="relative w-full max-w-sm aspect-[4/3]">
-    <ScanningOverlay imageUrl={imageUrlState} />
-  </div>
-) : (
+          <div className="relative w-full max-w-sm aspect-[4/3]">
+            <ScanningOverlay imageUrl={imageUrlState} />
+          </div>
+        ) : (
           <div className="flex gap-3 items-end justify-center" style={{ height: 48 }}>
             {[0, 1, 2, 3].map((i) => (
               <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
