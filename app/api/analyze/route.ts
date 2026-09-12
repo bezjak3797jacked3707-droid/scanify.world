@@ -72,20 +72,7 @@ CONTENT RULES — respond with exact JSON error if triggered:
 - Image too blurry or dark: {"error": "image_unclear"}
 
 IDENTIFICATION — be extremely precise:
-Look at every visible detail: body shape, proportions, badges, logos, model numbers, colorways, stitching, hardware, serial numbers, condition, and unique features.
-
-Cars — critical distinctions you must get right:
-- Lamborghini Revuelto (2023+): long angular body, hybrid V12, vertical Y-shaped LED taillights, Aventador replacement, significantly larger than Huracán
-- Lamborghini Huracán: shorter, rounder, V10, horizontal taillights — never confuse with Revuelto
-- Koenigsegg Regera: smooth flowing body, covered rear wheels, hybrid powertrain, large clamshell rear
-- Koenigsegg Agera RS: angular body, exposed rear wheels, large fixed wing, twin-turbo V8 — completely different from Regera
-- Koenigsegg Gemera: Koenigsegg's ONLY four-seater, long sleek body, no B-pillar, dihedral doors, hybrid V8+electric powertrain, 2300hp, seats 4 adults — worth $1,900,000+ in 2026
-- Kimera K39 (2026): Italian hypercar, carbon monocoque, Koenigsegg-sourced 5.0L twin-turbo V8, 972hp, pop-up headlights, massive rear wing, 1980s endurance racing inspired design, only ~50 units — worth $2,700,000
-- Brabus Bodo (2026): coachbuilt hyper-GT based on Aston Martin Vanquish, entirely new carbon fiber body, 5.2L twin-turbo V12, 1000hp, extremely low 130cm tall, boat-tail rear, 77 units worldwide — worth $1,200,000–$1,700,000
-- Ferrari 458 Speciale: fixed rear wing, aero bumpers, Speciale badging — worth significantly more than 458 Italia
-- Always identify carbon fiber aero kits, special edition badges, and unique trim details
-
-CRITICAL: The specific cars listed above (Revuelto, Huracán, Regera, Agera RS, Gemera, Kimera K39, Brabus Bodo, 458 Speciale/Italia) are reference examples ONLY. Never default to one of these names just because a car is rare, unusual, or hard to identify. If the visible badges, logos, proportions, or details do NOT clearly match one of these specific cars, identify the actual manufacturer and model you see instead — even if it's an obscure or low-production car you're less certain about. A rare car you correctly describe as "unidentified American hypercar, possibly SSC or similar" with lower confidence is far better than confidently misnaming it as one of the reference cars above. Always prioritize visible badges and manufacturer nameplates over silhouette similarity to these examples.
+Look at every visible detail: body shape, proportions, badges, logos, model numbers, colorways, stitching, hardware, serial numbers, condition, and unique features. Never default to a well-known or frequently-referenced model within a brand just because an item is rare, unusual, or hard to place. If the visible badges, logos, proportions, or details do not clearly match a specific model you can confidently name, identify the closest accurate description you can support with visible evidence, at lower confidence, rather than confidently naming a more famous model in the same lineup. This applies to every brand and category equally — no single model within any brand should be treated as a default guess for that brand's rare or hard-to-identify vehicles.
 
 Watches: brand, exact model, reference number, material, dial color, bezel type
 Sneakers: brand, exact model, colorway name, release year, collaboration
@@ -98,11 +85,7 @@ PRICING — use real 2026 secondary market values:
 - Lamborghini Huracán STO: $280,000–$330,000
 - Ferrari 458 Speciale: $380,000–$520,000
 - Ferrari 458 Italia: $180,000–$230,000
-- Koenigsegg Regera: $2,000,000–$3,500,000
-- Koenigsegg Agera RS: $4,000,000–$7,000,000
-- Koenigsegg Gemera: $1,900,000–$2,500,000
-- Kimera K39: $2,500,000–$3,000,000
-- Brabus Bodo: $1,200,000–$1,700,000- Rolex Submariner Date 126610LN: $13,000–$16,000
+- Rolex Submariner Date 126610LN: $13,000–$16,000
 - Patek Philippe Nautilus 5711: $120,000–$180,000
 - Nike Air Jordan 1 Chicago 2015: $1,500–$2,500
 - iPhone 15 Pro Max 256GB used: $700–$900
