@@ -110,9 +110,12 @@ PRICING — use real 2026 secondary market values:
 
 For all other items: sneakers → StockX/GOAT averages. Watches → Chrono24. Cars → private party. Electronics → eBay sold. Art → auction results.
 
-RESPONSE FORMAT — return only valid JSON, no markdown, no explanation:
+RESPONSE FORMAT — return only valid JSON, no markdown, no explanation. Fill the fields in this exact order — the early fields must genuinely inform the later ones, not be filled in after you've already decided on a name:
 {
-  "name": "exact precise name with make, model, variant, year, edition",
+  "visibleText": "Transcribe every visible marking, code, stamp, tag, serial number, badge text, or label exactly as it appears. Write 'none clearly visible' if nothing readable is present.",
+  "evidence": "State which specific visible details led to your identification — cite exact text from visibleText if any exists, or specific shape/proportion/hardware details if no text is visible. Be concrete, not 'it looks like a...'",
+  "evidenceFound": "true if your identification is grounded in actual text, numbers, or unambiguous markings visible in the image. false if you are relying primarily on general shape, silhouette, or resemblance to a known item without confirming text or markings.",
+  "name": "exact precise name with make, model, variant, year, edition — determined from the evidence above, not decided first",
   "currentValue": "2026 market value as number only",
   "originalPrice": "original retail price as number only",
   "category": "specific product category",
@@ -206,10 +209,18 @@ export async function POST(req: NextRequest) {
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
 
       const confidenceNum = parseInt(String(parsed.confidence), 10);
+      const hasEvidence = parsed.evidenceFound === true || parsed.evidenceFound === "true";
+      const lowConfidence = !isNaN(confidenceNum) && confidenceNum < GROUNDING_CONFIDENCE_THRESHOLD;
 
-      if (!isNaN(confidenceNum) && confidenceNum < GROUNDING_CONFIDENCE_THRESHOLD) {
+      // Gate on evidence OR confidence — catches both "genuinely unsure" (low confidence)
+      // and "confidently wrong via silhouette-matching" (no real evidence) cases
+      if (!hasEvidence || lowConfidence) {
         try {
-          console.log(`Confidence ${confidenceNum} below threshold — retrying with search grounding...`);
+          console.log(
+            !hasEvidence
+              ? "No concrete identifying evidence found — retrying with search grounding..."
+              : `Confidence ${confidenceNum} below threshold — retrying with search grounding...`
+          );
           const groundedModel = genAI.getGenerativeModel({
             model: "gemini-3.5-flash-lite",
             generationConfig: { temperature: 0.2 },
