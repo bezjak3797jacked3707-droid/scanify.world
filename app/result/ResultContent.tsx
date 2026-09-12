@@ -133,6 +133,51 @@ function LoadingMessage() {
   );
 }
 
+function ScanningOverlay() {
+  const dotPositions = [
+    { top: "15%", left: "20%" },
+    { top: "25%", left: "75%" },
+    { top: "55%", left: "12%" },
+    { top: "65%", left: "82%" },
+    { top: "80%", left: "40%" },
+  ];
+
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ overflow: "hidden" }}>
+      <span className="absolute top-3 left-3 w-8 h-8 border-t-[3px] border-l-[3px] rounded-tl-lg" style={{ borderColor: "#7c3aed" }} />
+      <span className="absolute top-3 right-3 w-8 h-8 border-t-[3px] border-r-[3px] rounded-tr-lg" style={{ borderColor: "#7c3aed" }} />
+      <span className="absolute bottom-3 left-3 w-8 h-8 border-b-[3px] border-l-[3px] rounded-bl-lg" style={{ borderColor: "#7c3aed" }} />
+      <span className="absolute bottom-3 right-3 w-8 h-8 border-b-[3px] border-r-[3px] rounded-br-lg" style={{ borderColor: "#7c3aed" }} />
+
+      <div
+        className="absolute left-0 right-0"
+        style={{
+          height: 3,
+          background: "linear-gradient(90deg, transparent 0%, #7c3aed 20%, #a78bfa 50%, #7c3aed 80%, transparent 100%)",
+          boxShadow: "0 0 12px 3px rgba(124,58,237,0.8), 0 0 24px 6px rgba(124,58,237,0.4)",
+          animation: "scan-sweep 2.2s ease-in-out infinite",
+        }}
+      />
+
+      {dotPositions.map((pos, i) => (
+        <span
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            top: pos.top,
+            left: pos.left,
+            width: 6,
+            height: 6,
+            background: "#7c3aed",
+            boxShadow: "0 0 8px 2px rgba(124,58,237,0.7)",
+            animation: `scan-dot-pulse 1.6s ease-in-out ${i * 0.3}s infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function handleContentError(errorCode: string, setError: (msg: string) => void, setLoading: (val: boolean) => void) {
   if (errorCode === "inappropriate_content") { setError("This item cannot be scanned. Scanify does not support inappropriate content."); setLoading(false); return true; }
   if (errorCode === "buildings_not_supported") { setError("Buildings and structures cannot be scanned. Scanify is for physical objects only."); setLoading(false); return true; }
@@ -255,6 +300,9 @@ export default function ResultContent() {
 
     if (!imageUrlParam) { setLoading(false); return; }
 
+    // Show the photo immediately during loading, not just after the result comes back
+    setImageUrlState(imageUrlParam);
+
     const eligibleParam = params.get("eligibleForLeaderboard") === "true";
     setIsLeaderboardEligible(eligibleParam);
 
@@ -275,7 +323,6 @@ export default function ResultContent() {
         if (handleContentError(scanData.error, setError, setLoading)) return;
         if (!res.ok) throw new Error("Analysis failed");
         setResult(scanData);
-        setImageUrlState(imageUrlParam);
         setTimeout(() => setShowConfetti(true), 200);
         setTimeout(() => setShowConfetti(false), 1200);
         setTimeout(() => setChartDrawn(true), 1700);
@@ -325,12 +372,19 @@ export default function ResultContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-8" style={{ background: "var(--color-black)" }}>
-        <div className="flex gap-3 items-end justify-center" style={{ height: 48 }}>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
-          ))}
-        </div>
+      <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-6" style={{ background: "var(--color-black)" }}>
+        {imageUrlState && !isLoadingFromHistory ? (
+          <div className="relative w-full max-w-sm aspect-[4/3] rounded-2xl overflow-hidden">
+            <img src={imageUrlState} alt="Scanning..." className="w-full h-full object-cover" style={{ filter: "brightness(0.75)" }} />
+            <ScanningOverlay />
+          </div>
+        ) : (
+          <div className="flex gap-3 items-end justify-center" style={{ height: 48 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: "#7c3aed", animation: `pulse-block 1.2s ease-in-out ${i * 0.15}s infinite` }} />
+            ))}
+          </div>
+        )}
         {isLoadingFromHistory ? (
           <p className="text-sm uppercase tracking-widest" style={{ color: "var(--color-gold)" }}>Loading scan…</p>
         ) : (
