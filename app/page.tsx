@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/ThemeToggle";
+import { buildAchievements } from "@/lib/achievements";
 import {
   AreaChart,
   Area,
@@ -66,6 +67,7 @@ function MyActivitySection({ userId }: { userId: string }) {
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [categoryData, setCategoryData] = useState<CategorySlice[]>([]);
   const [bestScans, setBestScans] = useState<BestScan[]>([]);
+  const [longestStreak, setLongestStreak] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -74,6 +76,13 @@ function MyActivitySection({ userId }: { userId: string }) {
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId);
       setTotalScans(count || 0);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("longest_streak")
+        .eq("id", userId)
+        .single();
+      setLongestStreak(profile?.longest_streak || 0);
 
       const { data: scans } = await supabase
         .from("scan_results")
@@ -132,6 +141,9 @@ function MyActivitySection({ userId }: { userId: string }) {
       </section>
     );
   }
+
+  const categoryCount = categoryData.length;
+  const achievements = buildAchievements(totalScans, categoryCount, longestStreak, portfolioValue);
 
   return (
     <section className="px-5 py-12" style={{ borderTop: "1px solid var(--color-border)" }}>
@@ -195,6 +207,18 @@ function MyActivitySection({ userId }: { userId: string }) {
           ))}
         </div>
       )}
+
+      <div className="rounded-2xl p-5 mb-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+        <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Achievements</p>
+        <div className="grid grid-cols-3 gap-3">
+          {achievements.map((a) => (
+            <div key={a.label} className="rounded-xl p-3 flex flex-col items-center text-center gap-1" style={{ background: "var(--color-thumb)", border: "1px solid var(--color-border)", opacity: a.unlocked ? 1 : 0.35 }}>
+              <span className="text-2xl">{a.emoji}</span>
+              <p className="text-[10px] uppercase tracking-wide leading-tight" style={{ color: a.unlocked ? "var(--color-text-secondary)" : "var(--color-text-muted)" }}>{a.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <Link href="/scan" className="block w-full text-center py-4 rounded-2xl font-semibold text-base tracking-wider uppercase transition-opacity hover:opacity-85" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
         Scan Something New
