@@ -216,8 +216,8 @@ export async function POST(req: NextRequest) {
           ]);
           const groundedParsed = parseJSON(groundedResult.response.text().trim());
           const groundedContentError = checkContentErrors(groundedParsed);
-          if (contentError) console.log(`Content rejected as "${contentError}" — full model response:`, JSON.stringify(parsed));
-          if (!groundedContentError) {
+if (groundedContentError) console.log(`Content rejected as "${groundedContentError}" — full model response:`, JSON.stringify(groundedParsed));
+if (!groundedContentError) {
             console.log("Grounded retry succeeded, using grounded result");
             await saveResult(groundedParsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
             return NextResponse.json(groundedParsed);
