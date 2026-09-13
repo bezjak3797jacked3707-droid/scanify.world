@@ -189,6 +189,7 @@ export async function POST(req: NextRequest) {
       ]);
       const parsed = parseJSON(result.response.text().trim());
       const contentError = checkContentErrors(parsed);
+      if (contentError) console.log(`Content rejected as "${contentError}" — full model response:`, JSON.stringify(parsed));
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
 
       const confidenceNum = parseInt(String(parsed.confidence), 10);
@@ -215,6 +216,7 @@ export async function POST(req: NextRequest) {
           ]);
           const groundedParsed = parseJSON(groundedResult.response.text().trim());
           const groundedContentError = checkContentErrors(groundedParsed);
+          if (contentError) console.log(`Content rejected as "${contentError}" — full model response:`, JSON.stringify(parsed));
           if (!groundedContentError) {
             console.log("Grounded retry succeeded, using grounded result");
             await saveResult(groundedParsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
@@ -263,6 +265,7 @@ export async function POST(req: NextRequest) {
       const text = response.content[0].type === "text" ? response.content[0].text : "";
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
+      if (contentError) console.log(`Content rejected as "${contentError}" — full model response:`, JSON.stringify(parsed));
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
@@ -297,6 +300,7 @@ export async function POST(req: NextRequest) {
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
+      if (contentError) console.log(`Content rejected as "${contentError}" — full model response:`, JSON.stringify(parsed));
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
