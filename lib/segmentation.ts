@@ -45,9 +45,6 @@ function colorDistance(a: number[], b: number[]): number {
       const ctx = canvas.getContext("2d");
       if (!ctx) { URL.revokeObjectURL(url); return null; }
   
-      // Stretch to a fixed 100x100 working space — matches the same normalized
-      // coordinate space the fallback silhouettes already use, so no aspect
-      // ratio math is needed anywhere downstream.
       ctx.drawImage(img, 0, 0, size, size);
       const { data } = ctx.getImageData(0, 0, size, size);
       URL.revokeObjectURL(url);
@@ -73,15 +70,11 @@ function colorDistance(a: number[], b: number[]): number {
         }
       }
   
-      // Too little detected difference from background — likely a low-contrast
-      // photo or uneven background. Bail out to the safe generic fallback.
       if (fgCount < size * size * 0.03) return null;
   
       const centroidX = sumX / fgCount;
       const centroidY = sumY / fgCount;
   
-      // Cast rays outward from the centroid, find the outermost foreground
-      // pixel along each — traces the actual detected shape as a polygon.
       const RAY_COUNT = 20;
       const points: number[][] = [];
   
@@ -100,7 +93,6 @@ function colorDistance(a: number[], b: number[]): number {
         if (lastFg) points.push(lastFg);
       }
   
-      // Too sparse/unreliable a trace — safer to fall back than show a broken shape.
       if (points.length < RAY_COUNT * 0.6) return null;
   
       return points;
