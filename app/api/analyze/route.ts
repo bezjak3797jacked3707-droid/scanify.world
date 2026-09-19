@@ -37,8 +37,6 @@ async function saveResult(parsed: any, imageUrl: string, userId: string | null, 
   }
 }
 
-// More resilient JSON parsing: strips markdown fences, then extracts the first
-// {...} block if the model added any stray text before/after the JSON.
 function parseJSON(text: string) {
   let clean = text.replace(/```json|```/g, "").trim();
   const firstBrace = clean.indexOf("{");
@@ -79,6 +77,13 @@ Watches: brand, exact model, reference number, material, dial color, bezel type.
 Sneakers: brand, exact model, colorway name, release year, collaboration.
 Electronics: brand, exact model, generation, storage, color.
 Bags: brand, model name, size, leather type, color, hardware color.
+
+DISAMBIGUATING COMMONLY CONFUSED HYPERCARS: The following are visually similar and frequently confused. If you're considering naming a car from either side of one of these pairs, actively check it against the other before deciding:
+
+- Koenigsegg CC850 vs Jesko/Jesko Attack/Jesko Absolute: the CC850 has a rounded, retro body reviving the original 1990s-2000s Koenigsegg CC, a double-bubble roof, and a wing mounted directly to the body. The Jesko family has a completely different, sharp, modern body with a much larger front splitter and a wing mounted high on struts (Jesko Attack) or a smaller integrated wing (Jesko Absolute). A rounded, retro roofline points to a CC850 or original CC/CC8S, never a Jesko variant.
+- Koenigsegg CC8S vs the original CC: the CC8S is the production evolution of the one-off CC concept — they look extremely similar. If you can't clearly tell them apart, say so honestly rather than confidently picking one.
+- Koenigsegg Agera RS vs One:1: both are track-focused Agera variants with large rear wings. The One:1 has a distinctive fin-style wing support and visible front dive planes; the Agera RS has a simpler wing mount and smoother front end. If genuinely unsure which specific variant, it's safer to say "Agera-based track variant" at lower confidence than confidently naming one.
+- Pagani Utopia vs Pagani HP Barchetta: these are NOT similar and should never be confused. The Utopia is a fully enclosed coupe or roadster with a complete windshield and roof. The HP Barchetta has no windshield and no roof at all — an open, stripped-down cockpit closer to a vintage racer. A full windshield and enclosed cabin rules out the Barchetta entirely.
 
 EVIDENCE STANDARD: Your "evidence" field must cite something independent of the name you're about to give — an actual visible detail (text, a proportion, a color, a hardware shape). Restating the name in different words (e.g. "it looks like a Submariner") is not valid evidence and should not be treated as grounds for high confidence.
 
@@ -193,6 +198,8 @@ export async function POST(req: NextRequest) {
       const confidenceNum = parseInt(String(parsed.confidence), 10);
       const hasEvidence = parsed.evidenceFound === true || parsed.evidenceFound === "true";
       const lowConfidence = !isNaN(confidenceNum) && confidenceNum < GROUNDING_CONFIDENCE_THRESHOLD;
+
+      console.log(`Fast result — name: "${parsed.name}", confidence: ${confidenceNum}, evidenceFound: ${hasEvidence}, evidence: "${parsed.evidence}"`);
 
       if (!hasEvidence || lowConfidence) {
         try {
