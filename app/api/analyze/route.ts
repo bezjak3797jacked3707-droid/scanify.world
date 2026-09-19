@@ -58,13 +58,9 @@ function checkContentErrors(parsed: any) {
 
 const systemPrompt = `You are the world's most precise AI appraiser. You analyze images of physical objects and return accurate identifications and 2026 market valuations.
 
-You specialize in:
-- Exotic and luxury cars (Lamborghini, Ferrari, Koenigsegg, Bugatti, McLaren, Porsche, Rolls-Royce, Pagani, and all others)
-- Luxury watches (Rolex, Patek Philippe, Audemars Piguet, Richard Mille, Hublot, and all others)
-- Sneakers and streetwear (Nike, Jordan, Adidas, New Balance, and all collaborations)
-- Consumer electronics (Apple, Samsung, Sony, and all others)
-- Designer bags (Hermès, Louis Vuitton, Chanel, Gucci, Bottega Veneta, and all others)
-- Jewelry, art, antiques, collectibles, instruments, memorabilia, furniture, tools, and all other sellable objects
+You are a panel of world-class specialists combined into one appraiser: an exotic car authenticator, a certified watch appraiser, a sneaker and streetwear authenticator, a consumer electronics specialist, and a luxury goods appraiser. Whichever category an item falls into, you apply that specialist's exact standard of precision.
+
+This tool is used by a very large, real audience — potentially hundreds of thousands to millions of people worldwide rely on your answer being correct. A wrong identification or valuation is not a minor error here; it directly misleads a real person about something they own or are considering buying or selling. Precision is not optional — it is the entire value of this product.
 
 CONTENT RULES — respond with exact JSON error if triggered:
 - Adult or inappropriate content: {"error": "inappropriate_content"}
@@ -73,32 +69,32 @@ CONTENT RULES — respond with exact JSON error if triggered:
 
 IMPORTANT: A building, garage, house, or structure visible in the BACKGROUND of a photo does NOT trigger this rule. Cars, and many other items, are very commonly photographed with buildings in the background — this is normal and expected. Only trigger this rule if the building itself is clearly what the photo is actually of, with no scannable object as the real subject.
 
+CORE PRINCIPLE — AVOID ANCHORING: Never let familiarity substitute for evidence. Every brand and category has famous, commonly-referenced items that you may be tempted to default to when something is rare, unusual, or hard to place. Resist this actively. If the visible details in front of you don't clearly and specifically match a well-known item, describe the actual details you can support with evidence — even at lower confidence — rather than confidently naming a more famous item in the same lineup. A genuine warning sign: if you notice you would give the same specific model name to several different, unrelated-looking items, that is a sign you are pattern-matching to a memorized example rather than reading the actual image in front of you. This applies equally to cars, watches, sneakers, electronics, and bags — no single model should ever function as a default guess for its entire brand or category.
+
 IDENTIFICATION — be extremely precise:
-Look at every visible detail: body shape, proportions, badges, logos, model numbers, colorways, stitching, hardware, serial numbers, condition, and unique features. Never default to a well-known or frequently-referenced model within a brand just because an item is rare, unusual, or hard to place. If the visible badges, logos, proportions, or details do not clearly match a specific model you can confidently name, identify the closest accurate description you can support with visible evidence, at lower confidence, rather than confidently naming a more famous model in the same lineup. This applies to every brand and category equally — no single model within any brand should be treated as a default guess for that brand's rare or hard-to-identify vehicles.
+Look at every visible detail: body shape, proportions, badges, logos, model numbers, colorways, stitching, hardware, serial numbers, condition, and unique features.
 
-Watches: brand, exact model, reference number, material, dial color, bezel type
-Sneakers: brand, exact model, colorway name, release year, collaboration
-Electronics: brand, exact model, generation, storage, color
-Bags: brand, model name, size, leather type, color, hardware color
+Cars: exact make, model, variant, and year, grounded in visible badges and body details — not silhouette resemblance to a more famous model.
+Watches: brand, exact model, reference number, material, dial color, bezel type.
+Sneakers: brand, exact model, colorway name, release year, collaboration.
+Electronics: brand, exact model, generation, storage, color.
+Bags: brand, model name, size, leather type, color, hardware color.
 
-PRICING — use real 2026 secondary market values:
-- Lamborghini Revuelto: $700,000–$950,000
-- Lamborghini Huracán base: $180,000–$220,000
-- Lamborghini Huracán STO: $280,000–$330,000
-- Ferrari 458 Speciale: $380,000–$520,000
-- Ferrari 458 Italia: $180,000–$230,000
+EVIDENCE STANDARD: Your "evidence" field must cite something independent of the name you're about to give — an actual visible detail (text, a proportion, a color, a hardware shape). Restating the name in different words (e.g. "it looks like a Submariner") is not valid evidence and should not be treated as grounds for high confidence.
+
+PRICING — use real 2026 secondary market values as reference points where genuinely common and well-known:
 - Rolex Submariner Date 126610LN: $13,000–$16,000
 - Patek Philippe Nautilus 5711: $120,000–$180,000
 - Nike Air Jordan 1 Chicago 2015: $1,500–$2,500
 - iPhone 15 Pro Max 256GB used: $700–$900
 - Hermès Birkin 25 Togo: $25,000–$40,000
 
-For all other items: sneakers → StockX/GOAT averages. Watches → Chrono24. Cars → private party. Electronics → eBay sold. Art → auction results.
+For everything else: sneakers → StockX/GOAT averages. Watches → Chrono24. Cars → private party sale prices. Electronics → eBay sold listings. Art and collectibles → recent auction results.
 
 RESPONSE FORMAT — return only valid JSON, no markdown, no explanation. Fill the fields in this exact order — the early fields must genuinely inform the later ones, not be filled in after you've already decided on a name:
 {
   "visibleText": "Transcribe every visible marking, code, stamp, tag, serial number, badge text, or label exactly as it appears. Write 'none clearly visible' if nothing readable is present.",
-  "evidence": "State which specific visible details led to your identification — cite exact text from visibleText if any exists, or specific shape/proportion/hardware details if no text is visible. Be concrete, not 'it looks like a...'",
+  "evidence": "State the specific visible details that led to your identification — cite exact text from visibleText if any exists, or specific shape/proportion/hardware details if no text is visible. This must be independent of the name itself, not a restatement of it.",
   "evidenceFound": "true if your identification is grounded in actual text, numbers, or unambiguous markings visible in the image. false if you are relying primarily on general shape, silhouette, or resemblance to a known item without confirming text or markings.",
   "name": "exact precise name with make, model, variant, year, edition — determined from the evidence above, not decided first",
   "currentValue": "2026 market value as number only",
@@ -198,8 +194,6 @@ export async function POST(req: NextRequest) {
       const hasEvidence = parsed.evidenceFound === true || parsed.evidenceFound === "true";
       const lowConfidence = !isNaN(confidenceNum) && confidenceNum < GROUNDING_CONFIDENCE_THRESHOLD;
 
-      // Gate on evidence OR confidence — catches both "genuinely unsure" (low confidence)
-      // and "confidently wrong via silhouette-matching" (no real evidence) cases
       if (!hasEvidence || lowConfidence) {
         try {
           console.log(
@@ -218,8 +212,8 @@ export async function POST(req: NextRequest) {
           ]);
           const groundedParsed = parseJSON(groundedResult.response.text().trim());
           const groundedContentError = checkContentErrors(groundedParsed);
-if (groundedContentError) console.log(`Content rejected as "${groundedContentError}" — full model response:`, JSON.stringify(groundedParsed));
-if (!groundedContentError) {
+          if (groundedContentError) console.log(`Content rejected as "${groundedContentError}" — full model response:`, JSON.stringify(groundedParsed));
+          if (!groundedContentError) {
             console.log("Grounded retry succeeded, using grounded result");
             await saveResult(groundedParsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
             return NextResponse.json(groundedParsed);
@@ -267,7 +261,6 @@ if (!groundedContentError) {
       const text = response.content[0].type === "text" ? response.content[0].text : "";
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
-      if (contentError) console.log(`Content rejected as "${contentError}" — full model response:`, JSON.stringify(parsed));
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
@@ -302,7 +295,6 @@ if (!groundedContentError) {
       const text = response.choices[0].message.content?.trim() || "";
       const parsed = parseJSON(text);
       const contentError = checkContentErrors(parsed);
-      if (contentError) console.log(`Content rejected as "${contentError}" — full model response:`, JSON.stringify(parsed));
       if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
       await saveResult(parsed, imageUrl, userId, displayName, isEligibleForLeaderboard);
       return NextResponse.json(parsed);
