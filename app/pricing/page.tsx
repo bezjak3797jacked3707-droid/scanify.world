@@ -12,7 +12,7 @@ const FREE_FEATURES = [
   { label: "Basic item identification", included: true  },
   { label: "Current value estimate",   included: true  },
   { label: "Category & materials",     included: true  },
-  { label: "Price history graph",      included: false },
+  { label: "Price history graph",      included: true  },
   { label: "Leaderboard ranking",      included: false },
   { label: "Priority AI analysis",     included: false },
 ];
@@ -42,7 +42,7 @@ const COMPARISON = [
   { label: "Monthly scans",       free: "3",      pro: "200",       business: "Unlimited" },
   { label: "AI appraisal",        free: "Basic",  pro: "Priority",  business: "Priority"  },
   { label: "Current value",       free: true,     pro: true,        business: true        },
-  { label: "Price history graph", free: false,    pro: true,        business: true        },
+  { label: "Price history graph", free: true,     pro: true,        business: true        },
   { label: "Leaderboard",         free: false,    pro: true,        business: true        },
   { label: "Materials & specs",   free: true,     pro: true,        business: true        },
   { label: "Deep Research resell (live web search)", free: false, pro: false, business: true },
@@ -198,7 +198,7 @@ export default function PricingPage() {
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex overflow-x-auto no-scrollbar mb-4 px-8"
+          className="flex overflow-x-auto no-scrollbar mb-4 px-8 pt-3"
           style={{ scrollSnapType: "x mandatory", gap: 12 }}
         >
           {/* Free slide */}
