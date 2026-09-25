@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Capacitor } from "@capacitor/core";
+
+type BillingPeriod = "monthly" | "annual";
 
 const FREE_FEATURES = [
   { label: "3 scans per month",        included: true  },
@@ -68,10 +70,26 @@ function CrossIcon() {
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [isNative, setIsNative] = useState(false);
+  const [billing, setBilling] = useState<BillingPeriod>("monthly");
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsNative(Capacitor.isNativePlatform());
   }, []);
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const index = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveSlide(index);
+  }
+
+  function goToSlide(index: number) {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+  }
 
   async function handleUpgrade(plan: "pro" | "business") {
     setLoading(plan);
@@ -83,9 +101,14 @@ export default function PricingPage() {
       return;
     }
 
-    const priceId = plan === "pro"
-      ? process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID
-      : process.env.NEXT_PUBLIC_STRIPE_BUSINESS_PRICE_ID;
+    const priceId =
+      plan === "pro"
+        ? billing === "annual"
+          ? process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID
+          : process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID
+        : billing === "annual"
+          ? process.env.NEXT_PUBLIC_STRIPE_BUSINESS_ANNUAL_PRICE_ID
+          : process.env.NEXT_PUBLIC_STRIPE_BUSINESS_PRICE_ID;
 
     const res = await fetch("/api/checkout", {
       method: "POST",
@@ -118,16 +141,51 @@ export default function PricingPage() {
     <main className="min-h-screen pb-12" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
       <div className="px-5 pt-10">
 
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pricing</p>
           <h1 className="text-4xl leading-tight mb-3" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>Simple, honest pricing</h1>
           <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Start free. Upgrade when you want more.</p>
         </div>
 
-        <div className="flex flex-col gap-4 mb-8">
+        {/* Monthly / Annual toggle */}
+        <div className="flex items-center justify-center gap-1 mb-8 mx-auto p-1 rounded-2xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", maxWidth: 280 }}>
+          <button
+            onClick={() => setBilling("monthly")}
+            className="flex-1 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all"
+            style={{
+              background: billing === "monthly" ? "var(--color-green)" : "transparent",
+              color: billing === "monthly" ? "var(--color-gold)" : "var(--color-text-muted)",
+            }}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBilling("annual")}
+            className="flex-1 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all relative"
+            style={{
+              background: billing === "annual" ? "var(--color-green)" : "transparent",
+              color: billing === "annual" ? "var(--color-gold)" : "var(--color-text-muted)",
+            }}
+          >
+            Annual
+            <span
+              className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+              style={{ background: "#00C853", color: "#0a0a0a" }}
+            >
+              -16%
+            </span>
+          </button>
+        </div>
 
-          {/* Free card — unchanged on native or web */}
-          <div className="rounded-3xl p-5 flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+        {/* Swipeable plan slides */}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto no-scrollbar mb-4"
+          style={{ scrollSnapType: "x mandatory", gap: 12 }}
+        >
+          {/* Free slide */}
+          <div className="flex-shrink-0 w-full rounded-3xl p-5 flex flex-col" style={{ scrollSnapAlign: "center", background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-text-muted)" }}>Free</p>
             <div className="flex items-end gap-1 mb-5">
               <span className="text-4xl font-bold" style={{ color: "var(--color-text-primary)" }}>$0</span>
@@ -146,16 +204,20 @@ export default function PricingPage() {
             </Link>
           </div>
 
-          {/* Pro card */}
-          <div className="rounded-3xl p-5 flex flex-col relative" style={{ background: "linear-gradient(155deg, rgba(27,77,62,0.22) 0%, var(--color-surface) 55%)", border: "1px solid var(--color-green)", boxShadow: "0 16px 48px rgba(27,77,62,0.22), 0 4px 20px rgba(0,0,0,0.5)" }}>
+          {/* Pro slide */}
+          <div className="flex-shrink-0 w-full rounded-3xl p-5 flex flex-col relative" style={{ scrollSnapAlign: "center", background: "linear-gradient(155deg, rgba(27,77,62,0.22) 0%, var(--color-surface) 55%)", border: "1px solid var(--color-green)", boxShadow: "0 16px 48px rgba(27,77,62,0.22), 0 4px 20px rgba(0,0,0,0.5)" }}>
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full whitespace-nowrap" style={{ background: "var(--color-green)", color: "var(--color-gold)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Most Popular
             </div>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pro</p>
-            <div className="flex items-end gap-1 mb-5">
-              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$2.99</span>
-              <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/mo</span>
+            <div className="flex items-end gap-1 mb-1">
+              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>${billing === "annual" ? "29.99" : "2.99"}</span>
+              <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/{billing === "annual" ? "yr" : "mo"}</span>
             </div>
+            {billing === "annual" && (
+              <p className="text-[10px] mb-4" style={{ color: "#00C853" }}>vs $35.88 billed monthly</p>
+            )}
+            {billing === "monthly" && <div className="mb-4" />}
             <ul className="flex flex-col gap-3 flex-1 mb-5">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
@@ -178,13 +240,17 @@ export default function PricingPage() {
             )}
           </div>
 
-          {/* Business card */}
-          <div className="rounded-3xl p-5 flex flex-col" style={{ background: "linear-gradient(155deg, rgba(201,168,76,0.08) 0%, var(--color-surface) 55%)", border: "1px solid rgba(201,168,76,0.3)" }}>
+          {/* Business slide */}
+          <div className="flex-shrink-0 w-full rounded-3xl p-5 flex flex-col" style={{ scrollSnapAlign: "center", background: "linear-gradient(155deg, rgba(201,168,76,0.08) 0%, var(--color-surface) 55%)", border: "1px solid rgba(201,168,76,0.3)" }}>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Business</p>
-            <div className="flex items-end gap-1 mb-5">
-              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>$9.99</span>
-              <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/mo</span>
+            <div className="flex items-end gap-1 mb-1">
+              <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>${billing === "annual" ? "99.99" : "9.99"}</span>
+              <span className="text-xs pb-1.5" style={{ color: "var(--color-text-muted)" }}>/{billing === "annual" ? "yr" : "mo"}</span>
             </div>
+            {billing === "annual" && (
+              <p className="text-[10px] mb-4" style={{ color: "#00C853" }}>vs $119.88 billed monthly</p>
+            )}
+            {billing === "monthly" && <div className="mb-4" />}
             <ul className="flex flex-col gap-3 flex-1 mb-5">
               {BUSINESS_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
@@ -212,7 +278,23 @@ export default function PricingPage() {
               </button>
             )}
           </div>
+        </div>
 
+        {/* Dot indicators */}
+        <div className="flex justify-center gap-2 mb-10">
+          {[0, 1, 2].map((i) => (
+            <button
+              key={i}
+              onClick={() => goToSlide(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              className="rounded-full transition-all"
+              style={{
+                width: activeSlide === i ? 20 : 6,
+                height: 6,
+                background: activeSlide === i ? "var(--color-gold)" : "var(--color-border)",
+              }}
+            />
+          ))}
         </div>
 
         {/* Comparison table */}
