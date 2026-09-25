@@ -81,14 +81,16 @@ export default function PricingPage() {
   function handleScroll() {
     const el = scrollRef.current;
     if (!el) return;
-    const index = Math.round(el.scrollLeft / el.clientWidth);
-    setActiveSlide(index);
+    const cardWidth = el.scrollWidth / 3;
+    const index = Math.round(el.scrollLeft / cardWidth);
+    setActiveSlide(Math.max(0, Math.min(2, index)));
   }
 
   function goToSlide(index: number) {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+    const cardWidth = el.scrollWidth / 3;
+    el.scrollTo({ left: index * cardWidth, behavior: "smooth" });
   }
 
   async function handleUpgrade(plan: "pro" | "business") {
@@ -139,16 +141,16 @@ export default function PricingPage() {
 
   return (
     <main className="min-h-screen pb-12" style={{ background: "var(--color-black)", color: "var(--color-text-primary)" }}>
-      <div className="px-5 pt-10">
+      <div className="pt-10">
 
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 px-5">
           <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Pricing</p>
           <h1 className="text-4xl leading-tight mb-3" style={{ fontFamily: "var(--font-heading)", fontWeight: 500 }}>Simple, honest pricing</h1>
           <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Start free. Upgrade when you want more.</p>
         </div>
 
         {/* Monthly / Annual toggle */}
-        <div className="flex items-center justify-center gap-1 mb-8 mx-auto p-1 rounded-2xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", maxWidth: 280 }}>
+        <div className="flex items-center justify-center gap-1 mb-3 mx-auto p-1 rounded-2xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", maxWidth: 280 }}>
           <button
             onClick={() => setBilling("monthly")}
             className="flex-1 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all"
@@ -177,15 +179,30 @@ export default function PricingPage() {
           </button>
         </div>
 
-        {/* Swipeable plan slides */}
+        {/* Swipe hint */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.6 }}>
+            <path d="M15 6l-6 6 6 6" stroke="var(--color-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p className="text-[11px] uppercase tracking-widest" style={{ color: "var(--color-gold)", opacity: 0.85 }}>
+            Swipe to compare plans
+          </p>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.6 }}>
+            <path d="M9 6l6 6-6 6" stroke="var(--color-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+
+        {/* Swipeable plan slides — each card is narrower than full width so the
+            next/previous card visibly peeks in from the edge, making it clear
+            at a glance that this scrolls */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex overflow-x-auto no-scrollbar mb-4"
+          className="flex overflow-x-auto no-scrollbar mb-4 px-8"
           style={{ scrollSnapType: "x mandatory", gap: 12 }}
         >
           {/* Free slide */}
-          <div className="flex-shrink-0 w-full rounded-3xl p-5 flex flex-col" style={{ scrollSnapAlign: "center", background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          <div className="flex-shrink-0 rounded-3xl p-5 flex flex-col" style={{ width: "86%", scrollSnapAlign: "center", background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-text-muted)" }}>Free</p>
             <div className="flex items-end gap-1 mb-5">
               <span className="text-4xl font-bold" style={{ color: "var(--color-text-primary)" }}>$0</span>
@@ -205,7 +222,7 @@ export default function PricingPage() {
           </div>
 
           {/* Pro slide */}
-          <div className="flex-shrink-0 w-full rounded-3xl p-5 flex flex-col relative" style={{ scrollSnapAlign: "center", background: "linear-gradient(155deg, rgba(27,77,62,0.22) 0%, var(--color-surface) 55%)", border: "1px solid var(--color-green)", boxShadow: "0 16px 48px rgba(27,77,62,0.22), 0 4px 20px rgba(0,0,0,0.5)" }}>
+          <div className="flex-shrink-0 rounded-3xl p-5 flex flex-col relative" style={{ width: "86%", scrollSnapAlign: "center", background: "linear-gradient(155deg, rgba(27,77,62,0.22) 0%, var(--color-surface) 55%)", border: "1px solid var(--color-green)", boxShadow: "0 16px 48px rgba(27,77,62,0.22), 0 4px 20px rgba(0,0,0,0.5)" }}>
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full whitespace-nowrap" style={{ background: "var(--color-green)", color: "var(--color-gold)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Most Popular
             </div>
@@ -241,7 +258,7 @@ export default function PricingPage() {
           </div>
 
           {/* Business slide */}
-          <div className="flex-shrink-0 w-full rounded-3xl p-5 flex flex-col" style={{ scrollSnapAlign: "center", background: "linear-gradient(155deg, rgba(201,168,76,0.08) 0%, var(--color-surface) 55%)", border: "1px solid rgba(201,168,76,0.3)" }}>
+          <div className="flex-shrink-0 rounded-3xl p-5 flex flex-col" style={{ width: "86%", scrollSnapAlign: "center", background: "linear-gradient(155deg, rgba(201,168,76,0.08) 0%, var(--color-surface) 55%)", border: "1px solid rgba(201,168,76,0.3)" }}>
             <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "var(--color-gold)" }}>Business</p>
             <div className="flex items-end gap-1 mb-1">
               <span className="text-4xl font-bold" style={{ color: "var(--color-gold)" }}>${billing === "annual" ? "99.99" : "9.99"}</span>
@@ -298,33 +315,35 @@ export default function PricingPage() {
         </div>
 
         {/* Comparison table */}
-        <div className="rounded-3xl overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
-          <div className="grid grid-cols-4 px-4 py-4" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)" }}>
-            <span className="text-xs font-semibold" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", letterSpacing: "0.06em" }}>Compare</span>
-            <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-text-secondary)" }}>Free</span>
-            <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-gold)" }}>Pro</span>
-            <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-gold)" }}>Biz</span>
+        <div className="px-5">
+          <div className="rounded-3xl overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
+            <div className="grid grid-cols-4 px-4 py-4" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)" }}>
+              <span className="text-xs font-semibold" style={{ fontFamily: "var(--font-heading)", color: "var(--color-gold)", letterSpacing: "0.06em" }}>Compare</span>
+              <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-text-secondary)" }}>Free</span>
+              <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-gold)" }}>Pro</span>
+              <span className="text-[9px] uppercase tracking-widest text-center" style={{ color: "var(--color-gold)" }}>Biz</span>
+            </div>
+
+            {COMPARISON.map((row, i) => (
+              <div key={row.label} className="grid grid-cols-4 px-4 py-3 items-center" style={{ borderBottom: i < COMPARISON.length - 1 ? "1px solid var(--color-border)" : undefined, background: i % 2 === 0 ? "transparent" : "var(--color-card-alt)" }}>
+                <span className="text-[10px]" style={{ color: "var(--color-text-secondary)" }}>{row.label}</span>
+                <div className="flex justify-center items-center">
+                  {typeof row.free === "boolean" ? (row.free ? <CheckIcon /> : <CrossIcon />) : <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>{row.free}</span>}
+                </div>
+                <div className="flex justify-center items-center">
+                  {typeof row.pro === "boolean" ? (row.pro ? <CheckIcon gold /> : <CrossIcon />) : <span className="text-[10px] font-medium" style={{ color: "var(--color-gold)" }}>{row.pro}</span>}
+                </div>
+                <div className="flex justify-center items-center">
+                  {typeof row.business === "boolean" ? (row.business ? <CheckIcon gold /> : <CrossIcon />) : <span className="text-[10px] font-medium" style={{ color: "var(--color-gold)" }}>{row.business}</span>}
+                </div>
+              </div>
+            ))}
           </div>
 
-          {COMPARISON.map((row, i) => (
-            <div key={row.label} className="grid grid-cols-4 px-4 py-3 items-center" style={{ borderBottom: i < COMPARISON.length - 1 ? "1px solid var(--color-border)" : undefined, background: i % 2 === 0 ? "transparent" : "var(--color-card-alt)" }}>
-              <span className="text-[10px]" style={{ color: "var(--color-text-secondary)" }}>{row.label}</span>
-              <div className="flex justify-center items-center">
-                {typeof row.free === "boolean" ? (row.free ? <CheckIcon /> : <CrossIcon />) : <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>{row.free}</span>}
-              </div>
-              <div className="flex justify-center items-center">
-                {typeof row.pro === "boolean" ? (row.pro ? <CheckIcon gold /> : <CrossIcon />) : <span className="text-[10px] font-medium" style={{ color: "var(--color-gold)" }}>{row.pro}</span>}
-              </div>
-              <div className="flex justify-center items-center">
-                {typeof row.business === "boolean" ? (row.business ? <CheckIcon gold /> : <CrossIcon />) : <span className="text-[10px] font-medium" style={{ color: "var(--color-gold)" }}>{row.business}</span>}
-              </div>
-            </div>
-          ))}
+          <p className="text-center text-[11px] mt-8" style={{ color: "var(--color-text-faint)" }}>
+            Pricing in USD · Cancel anytime · No hidden fees
+          </p>
         </div>
-
-        <p className="text-center text-[11px] mt-8" style={{ color: "var(--color-text-faint)" }}>
-          Pricing in USD · Cancel anytime · No hidden fees
-        </p>
 
       </div>
     </main>
