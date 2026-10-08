@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { supabase } from "@/lib/supabase";
 import { updateStreak } from "@/lib/streak";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const maxDuration = 300;
 
@@ -14,7 +15,23 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function saveResult(parsed: any, imageUrl: string, userId: string | null, displayName: string | null, eligibleForLeaderboard: boolean) {
+async function saveResult(parsed: any, imageUrl: string, userId: string | null, _clientDisplayName: string | null, eligibleForLeaderboard: boolean) {
+  // The leaderboard name always comes from the user's profile, looked up here on the server.
+  // The displayName sent by the browser is ignored on purpose, so nobody can put their own text on the board.
+  let displayName = "Anonymous";
+  if (userId) {
+    try {
+      const { data } = await getSupabaseAdmin()
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (data?.display_name) displayName = data.display_name;
+    } catch (err) {
+      console.error("Could not load display name:", err);
+    }
+  }
+
   const { error: dbError } = await supabase.from("scan_results").insert({
     image_url: imageUrl,
     name: parsed.name,
@@ -27,7 +44,7 @@ async function saveResult(parsed: any, imageUrl: string, userId: string | null, 
     specs: parsed.specs,
     user_id: userId || null,
     full_result: parsed,
-    display_name: displayName || "Anonymous",
+    display_name: displayName,
     on_leaderboard: eligibleForLeaderboard,
   });
   if (dbError) console.error("DB save error:", dbError.message);

@@ -4,7 +4,6 @@ import AuthButton from "@/components/AuthButton";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import ThemeToggle from "@/components/ThemeToggle";
 import { buildAchievements } from "@/lib/achievements";
 import {
   AreaChart,
@@ -398,7 +397,7 @@ export default function Home() {
             Scanify
           </span>
           <div className="flex items-center gap-3">
-            <ThemeToggle />
+            
             <AuthButton />
           </div>
         </div>

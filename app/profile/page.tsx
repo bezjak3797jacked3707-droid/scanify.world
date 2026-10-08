@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { User } from "@supabase/supabase-js";
+import { checkDisplayNameFormat, DISPLAY_NAME_MAX } from "@/lib/displayName";
 
 interface Profile {
   scans_used: number;
@@ -12,6 +13,7 @@ interface Profile {
   plan: string;
   current_streak: number;
   longest_streak: number;
+  display_name: string | null;
 }
 
 interface BestScan {
@@ -56,6 +58,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [savingName, setSavingName] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -63,7 +69,7 @@ export default function ProfilePage() {
       if (!session) { router.push("/"); return; }
       setUser(session.user);
 
-      const { data: profileData } = await supabase.from("profiles").select("scans_used, is_pro, plan, current_streak, longest_streak").eq("id", session.user.id).single();
+      const { data: profileData } = await supabase.from("profiles").select("scans_used, is_pro, plan, current_streak, longest_streak, display_name").eq("id", session.user.id).single();
       setProfile(profileData);
 
       const { count } = await supabase.from("scan_results").select("*", { count: "exact", head: true }).eq("user_id", session.user.id);
@@ -91,6 +97,46 @@ export default function ProfilePage() {
     }
     loadProfile();
   }, []);
+
+  function startEditingName() {
+    setNameInput(profile?.display_name || "");
+    setNameError("");
+    setEditingName(true);
+  }
+
+  async function handleSaveName() {
+    // Quick format check for instant feedback; the server repeats it and runs the full filter.
+    const check = checkDisplayNameFormat(nameInput);
+    if (!check.ok) {
+      setNameError(check.reason);
+      return;
+    }
+
+    setSavingName(true);
+    setNameError("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.push("/"); return; }
+
+      const res = await fetch("/api/set-display-name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ name: check.name }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setNameError(data.error || "Couldn't save that name. Please try again.");
+      } else {
+        setProfile((p) => (p ? { ...p, display_name: data.name } : p));
+        setEditingName(false);
+      }
+    } catch {
+      setNameError("Network error. Please try again.");
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -153,12 +199,59 @@ export default function ProfilePage() {
             <img src={user.user_metadata.avatar_url} alt="Profile" className="w-20 h-20 rounded-full" style={{ border: "2px solid var(--color-gold)" }} />
           ) : (
             <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold" style={{ background: "var(--color-green)", color: "var(--color-gold)" }}>
-              {user?.email?.[0]?.toUpperCase()}
+              {(profile?.display_name || user?.email || "?")[0].toUpperCase()}
             </div>
           )}
-          <div className="text-center">
-            <p className="font-semibold text-lg">{user?.user_metadata?.full_name || "User"}</p>
-            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>{user?.email}</p>
+          <div className="text-center w-full">
+            {editingName ? (
+              <div className="space-y-2">
+                <input
+                  value={nameInput}
+                  onChange={(e) => { setNameInput(e.target.value); setNameError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                  maxLength={DISPLAY_NAME_MAX}
+                  autoFocus
+                  placeholder="Your name"
+                  className="w-full rounded-xl px-4 py-2 text-sm text-center outline-none"
+                  style={{ background: "var(--color-black)", border: "1px solid var(--color-border)", color: "var(--color-text-primary)" }}
+                />
+                {nameError && <p className="text-xs text-red-400">{nameError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingName(false)}
+                    disabled={savingName}
+                    className="flex-1 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider disabled:opacity-50"
+                    style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveName}
+                    disabled={savingName}
+                    className="flex-1 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider disabled:opacity-50"
+                    style={{ background: "var(--color-green)", color: "var(--color-gold)" }}
+                  >
+                    {savingName ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <p className="font-semibold text-lg">{profile?.display_name || "Choose a name"}</p>
+                <button
+                  onClick={startEditingName}
+                  className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70"
+                  style={{ color: "var(--color-gold)" }}
+                >
+                  {profile?.display_name ? "Edit name" : "Set your name"}
+                </button>
+                {!profile?.display_name && (
+                  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                    This is the name shown on the leaderboard.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div className="px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest" style={{
             background: isBusiness ? "rgba(0,200,83,0.12)" : profile?.is_pro ? "rgba(201,168,76,0.15)" : "rgba(27,77,62,0.3)",

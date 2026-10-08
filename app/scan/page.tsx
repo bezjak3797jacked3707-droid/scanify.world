@@ -125,7 +125,7 @@ export default function ScanPage() {
       }
 
       router.push(
-        `/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&displayName=${encodeURIComponent(user?.user_metadata?.full_name ?? "Anonymous")}&eligibleForLeaderboard=${fromCamera}`
+        `/result?imageUrl=${encodeURIComponent(publicUrl)}&userId=${user?.id ?? ""}&note=${encodeURIComponent(note)}&eligibleForLeaderboard=${fromCamera}`
       );
     } catch (err) {
       setError("Upload failed. Please try again.");
