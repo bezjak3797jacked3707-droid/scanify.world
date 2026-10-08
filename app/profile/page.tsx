@@ -240,8 +240,8 @@ export default function ProfilePage() {
                 <p className="font-semibold text-lg">{profile?.display_name || "Choose a name"}</p>
                 <button
                   onClick={startEditingName}
-                  className="text-xs uppercase tracking-widest transition-opacity hover:opacity-70"
-                  style={{ color: "var(--color-gold)" }}
+                  className="mt-2 px-5 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-opacity hover:opacity-80"
+                  style={{ border: "1px solid rgba(201,168,76,0.4)", color: "var(--color-gold)" }}
                 >
                   {profile?.display_name ? "Edit name" : "Set your name"}
                 </button>
