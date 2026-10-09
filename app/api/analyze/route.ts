@@ -138,11 +138,21 @@ RESPONSE FORMAT — return only valid JSON, no markdown, no explanation. Fill th
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageUrl, userId, note, displayName, eligibleForLeaderboard } = await req.json();
+    const body = await req.json();
+    const { imageUrl, userId, displayName, eligibleForLeaderboard } = body;
+    // Cap the note so nobody can stuff the prompt (and your bill) with huge text.
+    const note: string | null = typeof body.note === "string" ? body.note.trim().slice(0, 200) || null : null;
     const isEligibleForLeaderboard = eligibleForLeaderboard === true || eligibleForLeaderboard === "true";
 
-    if (!imageUrl) {
+    if (!imageUrl || typeof imageUrl !== "string") {
       return NextResponse.json({ error: "No image URL provided" }, { status: 400 });
+    }
+
+    // Only accept images that live in your own Supabase "scans" bucket.
+    const supabaseBase = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/+$/, "");
+    const allowedPrefix = `${supabaseBase}/storage/v1/object/public/scans/`;
+    if (!imageUrl.startsWith(allowedPrefix) || imageUrl.includes("..")) {
+      return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
@@ -181,7 +191,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!imageResponse.ok) {
+      return NextResponse.json({ error: "Could not load image" }, { status: 400 });
+    }
+
     const imageBuffer = await imageResponse.arrayBuffer();
+    if (imageBuffer.byteLength > 8 * 1024 * 1024) {
+      return NextResponse.json({ error: "Image too large" }, { status: 413 });
+    }
     const base64Image = Buffer.from(imageBuffer).toString("base64");
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
