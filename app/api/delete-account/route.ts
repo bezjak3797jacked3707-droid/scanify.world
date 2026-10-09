@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 function extractStoragePath(imageUrl: string): string | null {
   // Public URLs look like: https://[project].supabase.co/storage/v1/object/public/scans/uploads/12345.jpg
@@ -11,16 +11,21 @@ function extractStoragePath(imageUrl: string): string | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
+    const supabaseAdmin = getSupabaseAdmin();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    // Who is asking? This comes from the login token, never from the request body,
+    // so nobody can delete an account that isn't theirs.
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (!token) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !userData?.user) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+    const userId = userData.user.id;
 
     // Fetch image URLs before deleting the rows
     const { data: scans } = await supabaseAdmin
