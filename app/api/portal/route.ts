@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
   try {
-    const { userEmail } = await req.json();
+    // Who is asking? This comes from the login token, never from the request body,
+    // so nobody can open the billing portal of an email address that isn't theirs.
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (!token) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
+    const { data: userData, error: authError } = await getSupabaseAdmin().auth.getUser(token);
+    const userEmail = userData?.user?.email;
+    if (authError || !userEmail) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
 
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
 

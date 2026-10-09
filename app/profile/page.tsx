@@ -144,7 +144,13 @@ export default function ProfilePage() {
   }
 
   async function handleManageSubscription() {
-    const res = await fetch("/api/portal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userEmail: user?.email }) });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { router.push("/"); return; }
+
+    const res = await fetch("/api/portal", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
   }
